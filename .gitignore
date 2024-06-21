@@ -133,7 +133,6 @@ data/*
 models/*.sav
 mlruns
 models/*
-wetter/*
 
 #config file has sensitive data
 .mlflow_uri
