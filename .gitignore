@@ -139,3 +139,6 @@ models/*
 
 #secrets
 credentials.py
+
+# MAC configuration
+.DS_Store
