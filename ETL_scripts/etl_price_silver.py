@@ -42,71 +42,66 @@ try:
     
     print("Loading complete. Starting transformation!")
     
-    # Perform data transformation  
-
-    fact_market_day_ahead_price.rename(columns={'germany/luxembourg_[€/mwh]_original_resolutions': 'germany/luxembourg_[€/mwh]', 
-                              '∅_de/lu_neighbours_[€/mwh]_original_resolutions': '∅_de/lu_neighbours_[€/mwh]', 
-                              'belgium_[€/mwh]_original_resolutions': 'belgium_[€/mwh]', 
-                              'denmark_1_[€/mwh]_original_resolutions': 'denmark_1_[€/mwh]', 
-                              'denmark_2_[€/mwh]_original_resolutions': 'denmark_2_[€/mwh]', 
-                              'france_[€/mwh]_original_resolutions': 'france_[€/mwh]', 
-                              'netherlands_[€/mwh]_original_resolutions': 'netherlands_[€/mwh]', 
-                              'norway_2_[€/mwh]_original_resolutions': 'norway_2_[€/mwh]', 
-                              'austria_[€/mwh]_original_resolutions': 'austria_[€/mwh]', 
-                              'poland_[€/mwh]_original_resolutions': 'poland_[€/mwh]', 
-                              'sweden_4_[€/mwh]_original_resolutions': 'sweden_4_[€/mwh]', 
-                              'switzerland_[€/mwh]_original_resolutions': 'switzerland_[€/mwh]', 
-                              'czech_republic_[€/mwh]_original_resolutions': 'czech_republic_[€/mwh]', 
-                              'de/at/lu_[€/mwh]_original_resolutions': 'de/at/lu_[€/mwh]', 
-                              'northern_italy_[€/mwh]_original_resolutions': 'northern_italy_[€/mwh]', 
-                              'slovenia_[€/mwh]_original_resolutions': 'slovenia_[€/mwh]', 
-                              'hungary_[€/mwh]_original_resolutions': 'hungary_[€/mwh]'
-                              }, inplace=True)
+    # Perform data transformation
+    fact_market_day_ahead_price.rename(columns={
+        'germany/luxembourg_[€/mwh]_original_resolutions': 'germany_luxembourg_eur_mwh', 
+        '∅_de/lu_neighbours_[€/mwh]_original_resolutions': 'avg_de_lu_neighbours_eur_mwh', 
+        'belgium_[€/mwh]_original_resolutions': 'belgium_eur_mwh', 
+        'denmark_1_[€/mwh]_original_resolutions': 'denmark_1_eur_mwh', 
+        'denmark_2_[€/mwh]_original_resolutions': 'denmark_2_eur_mwh', 
+        'france_[€/mwh]_original_resolutions': 'france_eur_mwh', 
+        'netherlands_[€/mwh]_original_resolutions': 'netherlands_eur_mwh', 
+        'norway_2_[€/mwh]_original_resolutions': 'norway_2_eur_mwh', 
+        'austria_[€/mwh]_original_resolutions': 'austria_eur_mwh', 
+        'poland_[€/mwh]_original_resolutions': 'poland_eur_mwh', 
+        'sweden_4_[€/mwh]_original_resolutions': 'sweden_4_eur_mwh', 
+        'switzerland_[€/mwh]_original_resolutions': 'switzerland_eur_mwh', 
+        'czech_republic_[€/mwh]_original_resolutions': 'czech_republic_eur_mwh', 
+        'de/at/lu_[€/mwh]_original_resolutions': 'de_at_lu_eur_mwh', 
+        'northern_italy_[€/mwh]_original_resolutions': 'northern_italy_eur_mwh', 
+        'slovenia_[€/mwh]_original_resolutions': 'slovenia_eur_mwh', 
+        'hungary_[€/mwh]_original_resolutions': 'hungary_eur_mwh'
+    }, inplace=True)
     
     fact_market_day_ahead_price.replace(-999, np.nan, inplace=True)
 
+    date_format = "%b %d, %Y %I:%M %p"
+    fact_market_day_ahead_price['start_date'] = pd.to_datetime(fact_market_day_ahead_price['start_date'], format=date_format, errors='coerce')
+    fact_market_day_ahead_price['end_date'] = pd.to_datetime(fact_market_day_ahead_price['end_date'], format=date_format, errors='coerce')
 
-    fact_market_day_ahead_price['start_date'] = pd.to_datetime(fact_market_day_ahead_price['start_date'], format='%Y-%m-%d %H:%M:%S')
-    fact_market_day_ahead_price['end_date'] = pd.to_datetime(fact_market_day_ahead_price['end_date'], format='%Y-%m-%d %H:%M:%S')
-
-    start_date = fact_market_day_ahead_price['start_date'].min()
-    end_date = fact_market_day_ahead_price['end_date'].max()
-    all_hours = pd.date_range(start=start_date, end=end_date, freq='h')
-
-    
-    # Create table in the database
-    cursor = conn.cursor()
+    # Create schema and table in the database
     new_table_command = """
-       CREATE SCHEMA if not exists "02_silver";
-       DROP TABLE IF EXISTS "02_silver".fact_market_day_ahead_price;       
-       CREATE TABLE IF NOT EXISTS "02_silver".fact_market_day_ahead_price(
-       start_date TIMESTAMP,
-       end_date TIMESTAMP,
-       germany/luxembourg_[€/mwh] FLOAT,
-       ∅_de/lu_neighbours_[€/mwh] FLOAT,
-       belgium_[€/mwh] FLOAT,
-       denmark_1_[€/mwh] FLOAT,
-       denmark_2_[€/mwh] FLOAT,
-       france_[€/mwh] FLOAT,
-       netherlands_[€/mwh] FLOAT,
-       norway_2_[€/mwh] FLOAT,
-       austria_[€/mwh] FLOAT,
-       poland_[€/mwh] FLOAT,
-       sweden_4_[€/mwh] FLOAT,
-       switzerland_[€/mwh] FLOAT,
-       czech_republic_[€/mwh] FLOAT,
-       de/at/lu_[€/mwh] FLOAT,
-       northern_italy_[€/mwh] FLOAT,
-       slovenia_[€/mwh] FLOAT,  
-       hungary_[€/mwh] FLOAT,           
-    );
+       CREATE SCHEMA IF NOT EXISTS "02_silver";
+       DROP TABLE IF EXISTS "02_silver".fact_market_day_ahead_price;
+       CREATE TABLE IF NOT EXISTS "02_silver".fact_market_day_ahead_price (
+           start_date TIMESTAMP,
+           end_date TIMESTAMP,
+           germany_luxembourg_eur_mwh FLOAT,
+           avg_de_lu_neighbours_eur_mwh FLOAT,
+           belgium_eur_mwh FLOAT,
+           denmark_1_eur_mwh FLOAT,
+           denmark_2_eur_mwh FLOAT,
+           france_eur_mwh FLOAT,
+           netherlands_eur_mwh FLOAT,
+           norway_2_eur_mwh FLOAT,
+           austria_eur_mwh FLOAT,
+           poland_eur_mwh FLOAT,
+           sweden_4_eur_mwh FLOAT,
+           switzerland_eur_mwh FLOAT,
+           czech_republic_eur_mwh FLOAT,
+           de_at_lu_eur_mwh FLOAT,
+           northern_italy_eur_mwh FLOAT,
+           slovenia_eur_mwh FLOAT,
+           hungary_eur_mwh FLOAT
+       );
     """
     cursor.execute(new_table_command)
     conn.commit()
         
     # Insert the transformed data into the new table
-    fact_market_day_ahead_price.to_sql('fact_market_day_ahead_price', engine, schema='02_silver', if_exists='replace')
+    fact_market_day_ahead_price.to_sql('fact_market_day_ahead_price', engine, schema='02_silver', if_exists='replace', index=False)
 
+    print("Data inserted into the database!")
     
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)

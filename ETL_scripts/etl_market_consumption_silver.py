@@ -51,8 +51,9 @@ try:
     ####################################### Consumption data
     
     # Convert 'start_date' and 'end_date' to datetime
-    raw_consumption['start_date'] = pd.to_datetime(raw_consumption['start_date'], errors='coerce')
-    raw_consumption['end_date'] = pd.to_datetime(raw_consumption['end_date'], errors='coerce')
+    date_format = "%b %d, %Y %I:%M %p"
+    raw_consumption['start_date'] = pd.to_datetime(raw_consumption['start_date'], errors='coerce', format=date_format)
+    raw_consumption['end_date'] = pd.to_datetime(raw_consumption['end_date'], errors='coerce', format=date_format)
 
     # Localize to the specific time zone (e.g., Europe/Berlin) handling DST transitions
     raw_consumption['start_date'] = raw_consumption['start_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
@@ -62,7 +63,7 @@ try:
     full_time_range = pd.date_range(start=raw_consumption['start_date'].min(), end=raw_consumption['start_date'].max(), freq='H', tz='Europe/Berlin')
 
     # Create a DataFrame with the complete time range
-    complete_time_consumption = raw_consumption.DataFrame(full_time_range, columns=['start_date'])
+    complete_time_consumption = pd.DataFrame(full_time_range, columns=['start_date'])
 
     # Merge the original DataFrame with the complete time range DataFrame
     consumption_complete = pd.merge(complete_time_consumption, raw_consumption, on='start_date', how='left')
