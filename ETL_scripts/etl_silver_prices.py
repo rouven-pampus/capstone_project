@@ -98,7 +98,7 @@ try:
     # Insert the transformed data into the new table
     print("Inserting data...")
     fact_market_day_ahead_price.to_sql('fact_market_day_ahead_price', engine, schema='02_silver', if_exists='replace', dtype=datatypes, chunksize=100000, index=False)
-    print("Data inserted!")
+    print("Data inserted. Jakob is great!")
     
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)
