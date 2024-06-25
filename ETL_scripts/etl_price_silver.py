@@ -103,7 +103,7 @@ try:
     conn.commit()
         
     # Insert the transformed data into the new table
-    insert_query = """
+    to_sql = """
         INSERT INTO "02_silver".fact_market_day_ahead_price (
         start_date, end_date, germany/luxembourg_[€/mwh], ∅_de/lu_neighbours_[€/mwh], 
         belgium_[€/mwh], denmark_1_[€/mwh], denmark_2_[€/mwh], france_[€/mwh], 
