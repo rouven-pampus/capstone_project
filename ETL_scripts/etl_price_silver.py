@@ -77,6 +77,8 @@ try:
     # Create table in the database
     cursor = conn.cursor()
     new_table_command = """
+       CREATE SCHEMA if not exists "02_silver";
+       DROP TABLE IF EXISTS "02_silver".fact_market_day_ahead_price;       
        CREATE TABLE IF NOT EXISTS "02_silver".fact_market_day_ahead_price(
        start_date TIMESTAMP,
        end_date TIMESTAMP,
@@ -103,18 +105,7 @@ try:
     conn.commit()
         
     # Insert the transformed data into the new table
-    to_sql = """
-        INSERT INTO "02_silver".fact_market_day_ahead_price (
-        start_date, end_date, germany/luxembourg_[€/mwh], ∅_de/lu_neighbours_[€/mwh], 
-        belgium_[€/mwh], denmark_1_[€/mwh], denmark_2_[€/mwh], france_[€/mwh], 
-        netherlands_[€/mwh], norway_2_[€/mwh], austria_[€/mwh], poland_[€/mwh], 
-        sweden_4_[€/mwh], switzerland_[€/mwh], czech_republic_[€/mwh], de/at/lu_[€/mwh], 
-        northern_italy_[€/mwh], slovenia_[€/mwh], hungary_[€/mwh]
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
-    for index, row in fact_market_day_ahead_price.iterrows():
-        cursor.execute(insert_query, (row['...']))
+    fact_market_day_ahead_price.to_sql('fact_market_day_ahead_price', engine, schema='02_silver', if_exists='replace')
 
     
 except Exception as error:
