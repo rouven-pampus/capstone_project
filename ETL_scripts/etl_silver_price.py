@@ -68,6 +68,10 @@ try:
     date_format = "%b %d, %Y %I:%M %p"
     fact_market_day_ahead_price['start_date'] = pd.to_datetime(fact_market_day_ahead_price['start_date'], format=date_format, errors='coerce')
     fact_market_day_ahead_price['end_date'] = pd.to_datetime(fact_market_day_ahead_price['end_date'], format=date_format, errors='coerce')
+    
+    # Localize to the specific time zone (e.g., Europe/Berlin) handling DST transitions
+    fact_market_day_ahead_price['start_date'] = fact_market_day_ahead_price['start_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
+    fact_market_day_ahead_price['end_date'] = fact_market_day_ahead_price['end_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
 
     # Create schema and table in the database
     new_table_command = """
