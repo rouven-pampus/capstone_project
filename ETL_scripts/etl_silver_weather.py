@@ -119,9 +119,6 @@ try:
     # Localize to the specific time zone (e.g., Europe/Berlin) handling DST transitions
     merged_weather['date'] = merged_weather['date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
     
-    # Convert to UTC for consistency
-    merged_weather['timestamp_utc'] = merged_weather['date'].dt.tz_convert('UTC')
-
     merged_weather.rename(columns={
         'id': 'weather_station_id',
         'date': 'timestamp'
@@ -129,6 +126,9 @@ try:
 
     # # Fill NAs through interpolation
     merged_weather = merged_weather.interpolate()
+    
+    #Drop unnecessary columns
+    merged_weather = merged_weather.drop(columns=['qual_s', 'qual_w', 'qual_t', 'atm_rad'])
     
     # Create table in the database
     cursor = conn.cursor()
@@ -138,7 +138,6 @@ try:
        CREATE TABLE IF NOT EXISTS "02_silver".fact_weather_data(
        weather_station_id TEXT,
        timestamp TIMESTAMP,
-       timestamp_utc TIMESTAMP,
        w_force FLOAT,
        w_direc INT,
        diff_rad INT,

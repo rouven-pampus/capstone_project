@@ -58,11 +58,7 @@ try:
     # Localize to the specific time zone (e.g., Europe/Berlin) handling DST transitions
     raw_generation['start_date'] = raw_generation['start_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
     raw_generation['end_date'] = raw_generation['end_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
-    
-    # Convert to UTC for consistency
-    raw_generation['start_date_utc'] = raw_generation['start_date'].dt.tz_convert('UTC')
-    raw_generation['end_date_utc'] = raw_generation['end_date'].dt.tz_convert('UTC')
-    
+        
     # Generate complete date range with hourly frequency
     full_time_range = pd.date_range(start=raw_generation['start_date'].min(), end=raw_generation['start_date'].max(), freq='H', tz='Europe/Berlin')
 
@@ -156,8 +152,6 @@ try:
         CREATE TABLE IF NOT EXISTS "02_silver".fact_market_generation_germany(
         start_date TIMESTAMP,
         end_date TIMESTAMP,
-        start_date_utc TIMESTAMP,
-        end_date_utc TIMESTAMP,
         biomass_generation FLOAT,
         hydropower_generation FLOAT,
         wind_offshore_generation FLOAT,
