@@ -120,6 +120,9 @@ try:
         'id': 'weather_station_id',
         'date': 'timestamp'
     }, inplace=True)
+
+    # # Fill NAs through interpolation
+    merged_weather = merged_weather.interpolate()
     
     # Create table in the database
     cursor = conn.cursor()
@@ -127,18 +130,14 @@ try:
        CREATE TABLE IF NOT EXISTS "02_silver".fact_weather_data(
        weather_station_id TEXT,
        timestamp TIMESTAMP,
-       qual_w INT,
        w_force FLOAT,
-       w_direc FLOAT,
-       qual_s INT,
-       atm_rad FLOAT,
-       diff_rad FLOAT,
-       glob_rad FLOAT,
-       sun FLOAT,
+       w_direc INT,
+       diff_rad INT,
+       glob_rad INT,
+       sun INT,
        zenith FLOAT,
-       qual_t INT,
        temp FLOAT,
-       humid FLOAT             
+       humid INT             
     );
     """
     cursor.execute(new_table_command)
@@ -146,14 +145,13 @@ try:
         
     # Insert the transformed data into the new table
     insert_query = """
-        INSERT INTO "02_silver".fact_weather_data (weather_station_id, timestamp, qual_w, w_force, w_direc, qual_s, atm_rad, diff_rad, glob_rad, sun, zenith, qual_t, temp, humid)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO "02_silver".fact_weather_data (weather_station_id, timestamp, w_force, w_direc, diff_rad, glob_rad, sun, zenith, temp, humid)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
 
     for index, row in merged_weather.iterrows():
-        cursor.execute(insert_query, (row['weather_station_id'], row['timestamp'], row['qual_w'], row['w_force'], row['w_direc'], 
-                                      row['qual_s'], row['atm_rad'], row['diff_rad'], row['glob_rad'], row['sun'], row['zenith'], 
-                                      row['qual_t'], row['temp'], row['humid']))
+        cursor.execute(insert_query, (row['weather_station_id'], row['timestamp'], row['w_force'], row['w_direc'], 
+                                      row['diff_rad'], row['glob_rad'], row['sun'], row['zenith'], row['temp'], row['humid']))
         
     conn.commit()    
     print("Data inserted!")
