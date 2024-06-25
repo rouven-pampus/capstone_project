@@ -127,6 +127,8 @@ try:
     # Create table in the database
     cursor = conn.cursor()
     new_table_command = """
+       CREATE SCHEMA if not exists "02_silver";
+       DROP TABLE IF EXISTS "02_silver".fact_weather_data;
        CREATE TABLE IF NOT EXISTS "02_silver".fact_weather_data(
        weather_station_id TEXT,
        timestamp TIMESTAMP,
@@ -142,20 +144,11 @@ try:
     """
     cursor.execute(new_table_command)
     conn.commit()
+    print("Data inserted! Rouven is great!")
         
     # Insert the transformed data into the new table
-    insert_query = """
-        INSERT INTO "02_silver".fact_weather_data (weather_station_id, timestamp, w_force, w_direc, diff_rad, glob_rad, sun, zenith, temp, humid)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
+    merged_weather.to_sql('fact_weather_data', engine, schema='02_silver', if_exists='replace')
 
-    for index, row in merged_weather.iterrows():
-        cursor.execute(insert_query, (row['weather_station_id'], row['timestamp'], row['w_force'], row['w_direc'], 
-                                      row['diff_rad'], row['glob_rad'], row['sun'], row['zenith'], row['temp'], row['humid']))
-        
-    conn.commit()    
-    print("Data inserted!")
-    
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)
     
