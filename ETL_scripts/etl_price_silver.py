@@ -69,8 +69,8 @@ try:
     fact_market_day_ahead_price['start_date'] = pd.to_datetime(fact_market_day_ahead_price['start_date'], format='%Y-%m-%d %H:%M:%S')
     fact_market_day_ahead_price['end_date'] = pd.to_datetime(fact_market_day_ahead_price['end_date'], format='%Y-%m-%d %H:%M:%S')
 
-    start_date = raw_price['start_date'].min()
-    end_date = raw_price['end_date'].max()
+    start_date = fact_market_day_ahead_price['start_date'].min()
+    end_date = fact_market_day_ahead_price['end_date'].max()
     all_hours = pd.date_range(start=start_date, end=end_date, freq='h')
 
     
