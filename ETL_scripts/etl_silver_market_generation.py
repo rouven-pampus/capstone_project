@@ -173,7 +173,7 @@ try:
     cursor.execute(new_table_command)
     conn.commit()
         
-    generation_complete.to_sql('fact_market_generation_germany', engine, schema='02_silver', if_exists='replace')
+    generation_complete.to_sql('fact_market_generation_germany', engine, schema='02_silver', if_exists='replace', index=False)
     
     print("Data inserted!")
         

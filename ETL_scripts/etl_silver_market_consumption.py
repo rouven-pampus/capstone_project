@@ -119,7 +119,7 @@ try:
     cursor.execute(new_table_command)
     conn.commit()
         
-    consumption_complete.to_sql('fact_market_consumption_germany', engine, schema='02_silver', if_exists='replace')
+    consumption_complete.to_sql('fact_market_consumption_germany', engine, schema='02_silver', if_exists='replace', index=False)
       
     print("Data inserted!")
     

@@ -115,6 +115,12 @@ try:
                                   .merge(raw_temp_full, on=['id', 'date'], how='outer')
 
     merged_weather = merged_weather.drop(merged_weather.index[0])
+    
+    # Localize to the specific time zone (e.g., Europe/Berlin) handling DST transitions
+    merged_weather['date'] = merged_weather['date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
+    
+    # Convert to UTC for consistency
+    merged_weather['timestamp_utc'] = merged_weather['date'].dt.tz_convert('UTC')
 
     merged_weather.rename(columns={
         'id': 'weather_station_id',
@@ -132,6 +138,7 @@ try:
        CREATE TABLE IF NOT EXISTS "02_silver".fact_weather_data(
        weather_station_id TEXT,
        timestamp TIMESTAMP,
+       timestamp_utc TIMESTAMP,
        w_force FLOAT,
        w_direc INT,
        diff_rad INT,
@@ -147,7 +154,7 @@ try:
     print("Inserting data...")
         
     # Insert the transformed data into the new table
-    merged_weather.to_sql('fact_weather_data', engine, schema='02_silver', if_exists='replace')
+    merged_weather.to_sql('fact_weather_data', engine, schema='02_silver', if_exists='replace', index=False)
     print("Data inserted! Rouven is great!")
 
 except Exception as error:
