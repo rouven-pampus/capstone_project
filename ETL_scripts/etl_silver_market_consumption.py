@@ -59,6 +59,10 @@ try:
     raw_consumption['start_date'] = raw_consumption['start_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
     raw_consumption['end_date'] = raw_consumption['end_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
     
+     # Convert to UTC for consistency
+    raw_consumption['start_date_utc'] = raw_consumption['start_date'].dt.tz_convert('UTC')
+    raw_consumption['end_date_utc'] = raw_consumption['end_date'].dt.tz_convert('UTC')
+    
     # Generate complete date range with hourly frequency
     full_time_range = pd.date_range(start=raw_consumption['start_date'].min(), end=raw_consumption['start_date'].max(), freq='H', tz='Europe/Berlin')
 
@@ -111,6 +115,8 @@ try:
         CREATE TABLE IF NOT EXISTS "02_silver".fact_market_consumption_germany(
         start_date TIMESTAMP,
         end_date TIMESTAMP,
+        start_date_utc TIMESTAMP,
+        end_date_utc TIMESTAMP,
         total_grid_load_consumption FLOAT,
         residual_load_consumption FLOAT,
         hydro_pumped_storage_consumption FLOAT            
@@ -119,7 +125,7 @@ try:
     cursor.execute(new_table_command)
     conn.commit()
         
-    consumption_complete.to_sql('fact_market_consumption_germany', engine, schema='02_silver', if_exists='replace')
+    consumption_complete.to_sql('fact_market_consumption_germany', engine, schema='02_silver', if_exists='replace', index=False)
       
     print("Data inserted!")
     
