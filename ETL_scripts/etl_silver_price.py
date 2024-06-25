@@ -68,10 +68,6 @@ try:
     date_format = "%b %d, %Y %I:%M %p"
     fact_market_day_ahead_price['start_date'] = pd.to_datetime(fact_market_day_ahead_price['start_date'], format=date_format, errors='coerce')
     fact_market_day_ahead_price['end_date'] = pd.to_datetime(fact_market_day_ahead_price['end_date'], format=date_format, errors='coerce')
-    
-    # Convert to UTC for consistency
-    fact_market_day_ahead_price['start_date_utc'] = fact_market_day_ahead_price['start_date'].dt.tz_convert('UTC')
-    fact_market_day_ahead_price['end_date_utc'] = fact_market_day_ahead_price['end_date'].dt.tz_convert('UTC')
 
     # Create schema and table in the database
     new_table_command = """
@@ -80,8 +76,6 @@ try:
        CREATE TABLE IF NOT EXISTS "02_silver".fact_market_day_ahead_price (
            start_date TIMESTAMP,
            end_date TIMESTAMP,
-           start_date_utc TIMESTAMP,
-           end_date_utc TIMESTAMP,
            germany_luxembourg_eur_mwh FLOAT,
            avg_de_lu_neighbours_eur_mwh FLOAT,
            belgium_eur_mwh FLOAT,

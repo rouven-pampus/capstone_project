@@ -119,9 +119,6 @@ try:
     # Localize to the specific time zone (e.g., Europe/Berlin) handling DST transitions
     merged_weather['date'] = merged_weather['date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
     
-    # Convert to UTC for consistency
-    merged_weather['timestamp_utc'] = merged_weather['date'].dt.tz_convert('UTC')
-
     merged_weather.rename(columns={
         'id': 'weather_station_id',
         'date': 'timestamp'
@@ -138,7 +135,6 @@ try:
        CREATE TABLE IF NOT EXISTS "02_silver".fact_weather_data(
        weather_station_id TEXT,
        timestamp TIMESTAMP,
-       timestamp_utc TIMESTAMP,
        w_force FLOAT,
        w_direc INT,
        diff_rad INT,
