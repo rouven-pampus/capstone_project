@@ -127,6 +127,9 @@ try:
     # # Fill NAs through interpolation
     merged_weather = merged_weather.interpolate()
     
+    #Drop unnecessary columns
+    merged_weather = merged_weather.drop(columns=['qual_s', 'qual_w', 'qual_t', 'atm_rad'])
+    
     # Create table in the database
     cursor = conn.cursor()
     new_table_command = """
