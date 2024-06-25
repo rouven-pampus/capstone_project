@@ -146,7 +146,9 @@ try:
     # Create table in the database
     cursor = conn.cursor()
     new_table_command = """
-       CREATE TABLE IF NOT EXISTS "02_silver".fact_market_generation_germany(
+        CREATE SCHEMA if not exists "02_silver";
+        DROP TABLE IF EXISTS "02_silver".fact_market_generation_germany;
+        CREATE TABLE IF NOT EXISTS "02_silver".fact_market_generation_germany(
         start_date TIMESTAMP,
         end_date TIMESTAMP,
         biomass_generation FLOAT,
@@ -170,37 +172,8 @@ try:
     cursor.execute(new_table_command)
     conn.commit()
         
-    # Insert the transformed data into the new table
-    insert_query = """
-        INSERT INTO "02_silver".fact_market_generation_germany (start_date, end_date, biomass_generation, hydropower_generation, wind_offshore_generation, wind_onshore_generation, photovoltaics_generation, other_renewable_generation, nuclear_generation, lignite_generation, hard_coal_generation, fossil_gas_generation, hydro_pumped_storage_generation, other_conventional_generation, wind_total, conventional_total, renewable_total, total_mwh)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
-
-    for index, row in generation_complete.iterrows():
-        # Data to insert
-        data = (
-            row['start_date'],
-            row['end_date'],
-            row['biomass_generation'],
-            row['hydropower_generation'],
-            row['wind_offshore_generation'],
-            row['wind_onshore_generation'],
-            row['photovoltaics_generation'],
-            row['other_renewable_generation'],
-            row['nuclear_generation'],
-            row['lignite_generation'],
-            row['hard_coal_generation'],
-            row['fossil_gas_generation'],
-            row['hydro_pumped_storage_generation'],
-            row['other_conventional_generation'],
-            row['wind_total'],
-            row['conventional_total'],
-            row['renewable_total'],
-            row['total_mwh']
-        )
-        cursor.execute(insert_query, data)
-        
-    conn.commit()    
+    generation_complete.to_sql('fact_market_generation_germany', engine, schema='02_silver', if_exists='replace')
+    
     print("Data inserted!")
     
 except Exception as error:
