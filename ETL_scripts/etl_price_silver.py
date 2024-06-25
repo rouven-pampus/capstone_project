@@ -77,7 +77,7 @@ try:
     # Create table in the database
     cursor = conn.cursor()
     new_table_command = """
-       CREATE TABLE IF NOT EXISTS "02_silver".price_data(
+       CREATE TABLE IF NOT EXISTS "02_silver".fact_market_day_ahead_price(
        start_date TIMESTAMP,
        end_date TIMESTAMP,
        germany/luxembourg_[€/mwh] FLOAT,
