@@ -91,7 +91,7 @@ try:
        austria_[€/mwh] FLOAT,
        poland_[€/mwh] FLOAT,
        sweden_4_[€/mwh] FLOAT,
-       switzerland_[€/mwh]_original_resolutions FLOAT,
+       switzerland_[€/mwh] FLOAT,
        czech_republic_[€/mwh] FLOAT,
        de/at/lu_[€/mwh] FLOAT,
        northern_italy_[€/mwh] FLOAT,
