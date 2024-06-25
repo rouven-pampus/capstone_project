@@ -35,22 +35,22 @@ try:
     print("You are connected to -", record, "\n")
     
     # Load data from the database using SQLAlchemy engine
-    print("Solar data loading!")
+    print("Solar data loading...")
     query_string1 = 'SELECT * FROM "01_bronze"."raw_weather_solar"'
     raw_solar = pd.read_sql(query_string1, engine)
     print("Loading finished!")
     
-    print("Wind data loading!")
+    print("Wind data loading...")
     query_string2 = 'SELECT * FROM "01_bronze"."raw_weather_wind"'
     raw_wind = pd.read_sql(query_string2, engine)
     print("Loading finished!")
 
-    print("Temperature data loading!")
+    print("Temperature data loading...")
     query_string3 = 'SELECT * FROM "01_bronze"."raw_weather_temp"'
     raw_temp = pd.read_sql(query_string3, engine)
     print("Loading finished!")
     
-    print("Loading complete. Starting transformation!")
+    print("Loading complete. Starting transformation...")
     
     # Perform data transformation
     raw_wind.drop(['eor'], axis=1, inplace=True)
@@ -144,10 +144,11 @@ try:
     """
     cursor.execute(new_table_command)
     conn.commit()
-    print("Data inserted! Rouven is great!")
+    print("Inserting data...")
         
     # Insert the transformed data into the new table
     merged_weather.to_sql('fact_weather_data', engine, schema='02_silver', if_exists='replace')
+    print("Data inserted! Rouven is great!")
 
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)

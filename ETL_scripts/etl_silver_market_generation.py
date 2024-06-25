@@ -51,8 +51,9 @@ try:
     ####################################### Energy generation data 
     
     # Convert 'start_date' and 'end_date' to datetime
-    raw_generation['start_date'] = pd.to_datetime(raw_generation['start_date'], errors='coerce')
-    raw_generation['end_date'] = pd.to_datetime(raw_generation['end_date'], errors='coerce')
+    date_format = "%b %d, %Y %I:%M %p"
+    raw_generation['start_date'] = pd.to_datetime(raw_generation['start_date'], errors='coerce', format=date_format)
+    raw_generation['end_date'] = pd.to_datetime(raw_generation['end_date'], errors='coerce', format=date_format)
 
     # Localize to the specific time zone (e.g., Europe/Berlin) handling DST transitions
     raw_generation['start_date'] = raw_generation['start_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
@@ -129,11 +130,11 @@ try:
     ]
     generation_complete['renewable_total_[mwh]'] = generation_complete[renewable_columns].sum(axis=1)
     
-# Calculate total production
+    # Calculate total production
     generation_complete['total_mwh'] = generation_complete['conventional_total_[mwh]'] + generation_complete['renewable_total_[mwh]']
 
     # Convert trailing NAs in nuclear to 0, since there's no more nuclear power production 
-    generation_complete[generation_complete['start_date'] > '2024-01-01']['nuclear_[mwh]_calculated_resolutions'] = 0
+    generation_complete.loc[generation_complete['start_date'] > '2024-01-01', 'nuclear_[mwh]_calculated_resolutions'] = 0
     
     # Drop remaining NAs that stem from time zone conversion
     generation_complete.dropna(inplace=True)
@@ -175,7 +176,7 @@ try:
     generation_complete.to_sql('fact_market_generation_germany', engine, schema='02_silver', if_exists='replace')
     
     print("Data inserted!")
-    
+        
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)
     
