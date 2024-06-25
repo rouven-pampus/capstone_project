@@ -105,7 +105,9 @@ try:
     # Create table in the database
     cursor = conn.cursor()
     new_table_command = """
-       CREATE TABLE IF NOT EXISTS "02_silver".fact_market_consumption_germany(
+        CREATE SCHEMA if not exists "02_silver";
+        DROP TABLE IF EXISTS "02_silver".fact_market_consumption_germany;
+        CREATE TABLE IF NOT EXISTS "02_silver".fact_market_consumption_germany(
         start_date TIMESTAMP,
         end_date TIMESTAMP,
         total_grid_load_consumption FLOAT,
@@ -116,24 +118,8 @@ try:
     cursor.execute(new_table_command)
     conn.commit()
         
-    # Insert the transformed data into the new table
-    insert_query = """
-        INSERT INTO "02_silver".fact_market_consumption_germany (start_date, end_date, total_grid_load_consumption, residual_load_consumption, hydro_pumped_storage_consumption)
-        VALUES (%s, %s, %s, %s, %s)
-    """
-
-    for index, row in consumption_complete.iterrows():
-        # Data to insert
-        data = (
-            row['start_date'],
-            row['end_date'],
-            row['total_(grid_load)_[mwh]_consumption'],
-            row['residual_load_[mwh]_consumption'],
-            row['hydro_pumped_storage_[mwh]_consumption']
-        )
-        cursor.execute(insert_query, data)
-        
-    conn.commit()    
+    consumption_complete.to_sql('fact_market_consumption_germany', engine, schema='02_silver', if_exists='replace')
+      
     print("Data inserted!")
     
 except Exception as error:
