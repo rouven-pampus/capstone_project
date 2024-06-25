@@ -37,14 +37,14 @@ try:
     # Load data from the database using SQLAlchemy engine
     print("Price data loading!")
     query_string1 = 'SELECT * FROM "01_bronze"."raw_market_day_ahead_prices"'
-    raw_price = pd.read_sql(query_string1, engine)
+    fact_market_day_ahead_price = pd.read_sql(query_string1, engine)
     print("Loading finished!")
     
     print("Loading complete. Starting transformation!")
     
     # Perform data transformation  
 
-    raw_price.rename(columns={'germany/luxembourg_[€/mwh]_original_resolutions': 'germany/luxembourg_[€/mwh]', 
+    fact_market_day_ahead_price.rename(columns={'germany/luxembourg_[€/mwh]_original_resolutions': 'germany/luxembourg_[€/mwh]', 
                               '∅_de/lu_neighbours_[€/mwh]_original_resolutions': '∅_de/lu_neighbours_[€/mwh]', 
                               'belgium_[€/mwh]_original_resolutions': 'belgium_[€/mwh]', 
                               'denmark_1_[€/mwh]_original_resolutions': 'denmark_1_[€/mwh]', 
@@ -63,11 +63,11 @@ try:
                               'hungary_[€/mwh]_original_resolutions': 'hungary_[€/mwh]'
                               }, inplace=True)
     
-    raw_price.replace(-999, np.nan, inplace=True)
+    fact_market_day_ahead_price.replace(-999, np.nan, inplace=True)
 
 
-    raw_price['start_date'] = pd.to_datetime(raw_price['start_date'], format='%Y-%m-%d %H:%M:%S')
-    raw_price['end_date'] = pd.to_datetime(raw_price['end_date'], format='%Y-%m-%d %H:%M:%S')
+    fact_market_day_ahead_price['start_date'] = pd.to_datetime(fact_market_day_ahead_price['start_date'], format='%Y-%m-%d %H:%M:%S')
+    fact_market_day_ahead_price['end_date'] = pd.to_datetime(fact_market_day_ahead_price['end_date'], format='%Y-%m-%d %H:%M:%S')
 
     start_date = raw_price['start_date'].min()
     end_date = raw_price['end_date'].max()
@@ -104,7 +104,7 @@ try:
         
     # Insert the transformed data into the new table
     insert_query = """
-        INSERT INTO "02_silver".price_data (
+        INSERT INTO "02_silver".fact_market_day_ahead_price (
         start_date, end_date, germany/luxembourg_[€/mwh], ∅_de/lu_neighbours_[€/mwh], 
         belgium_[€/mwh], denmark_1_[€/mwh], denmark_2_[€/mwh], france_[€/mwh], 
         netherlands_[€/mwh], norway_2_[€/mwh], austria_[€/mwh], poland_[€/mwh], 
@@ -113,7 +113,7 @@ try:
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
-    for index, row in price_data.iterrows():
+    for index, row in fact_market_day_ahead_price.iterrows():
         cursor.execute(insert_query, (row['...']))
 
     
