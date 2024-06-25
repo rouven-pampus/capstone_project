@@ -1,7 +1,7 @@
 ####################################### Setup #######################################
 
 import psycopg2
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
 from dotenv import load_dotenv
 import os
 import numpy as np
@@ -145,35 +145,30 @@ try:
     ####################################### LOAD #######################################
     
     # Create table in the database
-    cursor = conn.cursor()
-    new_table_command = """
-        CREATE SCHEMA if not exists "02_silver";
-        DROP TABLE IF EXISTS "02_silver".fact_market_generation_germany;
-        CREATE TABLE IF NOT EXISTS "02_silver".fact_market_generation_germany(
-        start_date TIMESTAMP,
-        end_date TIMESTAMP,
-        biomass_generation FLOAT,
-        hydropower_generation FLOAT,
-        wind_offshore_generation FLOAT,
-        wind_onshore_generation FLOAT,
-        photovoltaics_generation FLOAT,
-        other_renewable_generation FLOAT,
-        nuclear_generation FLOAT,
-        lignite_generation FLOAT,
-        hard_coal_generation FLOAT,
-        fossil_gas_generation FLOAT,
-        hydro_pumped_storage_generation FLOAT,
-        other_conventional_generation FLOAT,
-        wind_total FLOAT,
-        conventional_total FLOAT,
-        renewable_total FLOAT,
-        total_mwh FLOAT
-    );
-    """
-    cursor.execute(new_table_command)
-    conn.commit()
-        
-    generation_complete.to_sql('fact_market_generation_germany', engine, schema='02_silver', if_exists='replace', index=False)
+    columns = generation_complete.columns.values.tolist()
+       
+    datatypes = {columns[0]: DateTime(timezone=True), 
+                 columns[1]: DateTime(timezone=True), 
+                 columns[2]: Float,
+                 columns[3]: Float,
+                 columns[4]: Float,
+                 columns[5]: Float,
+                 columns[6]: Float,
+                 columns[7]: Float,
+                 columns[8]: Float,
+                 columns[9]: Float,
+                 columns[10]: Float,
+                 columns[11]: Float,
+                 columns[12]: Float,
+                 columns[13]: Float,
+                 columns[14]: Float,
+                 columns[15]: Float,
+                 columns[16]: Float,
+                 columns[17]: Float
+                 }
+    
+    print("Inserting data...!")    
+    generation_complete.to_sql('fact_market_generation_germany', engine, schema='02_silver', if_exists='replace', dtype=datatypes, chunksize=100000, index=False)
     
     print("Data inserted!")
         

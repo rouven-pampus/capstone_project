@@ -1,5 +1,5 @@
 import psycopg2
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
 from dotenv import load_dotenv
 import os
 import numpy as np
@@ -35,12 +35,10 @@ try:
     print("You are connected to -", record, "\n")
     
     # Load data from the database using SQLAlchemy engine
-    print("Price data loading!")
+    print("Price data loading...")
     query_string1 = 'SELECT * FROM "01_bronze"."raw_market_day_ahead_prices"'
     fact_market_day_ahead_price = pd.read_sql(query_string1, engine)
     print("Loading finished!")
-    
-    print("Loading complete. Starting transformation!")
     
     # Perform data transformation
     fact_market_day_ahead_price.rename(columns={
@@ -74,38 +72,33 @@ try:
     fact_market_day_ahead_price['end_date'] = fact_market_day_ahead_price['end_date'].dt.tz_localize('Europe/Berlin', ambiguous='NaT', nonexistent='NaT')
 
     # Create schema and table in the database
-    new_table_command = """
-       CREATE SCHEMA IF NOT EXISTS "02_silver";
-       DROP TABLE IF EXISTS "02_silver".fact_market_day_ahead_price;
-       CREATE TABLE IF NOT EXISTS "02_silver".fact_market_day_ahead_price (
-           start_date TIMESTAMP,
-           end_date TIMESTAMP,
-           germany_luxembourg_eur_mwh FLOAT,
-           avg_de_lu_neighbours_eur_mwh FLOAT,
-           belgium_eur_mwh FLOAT,
-           denmark_1_eur_mwh FLOAT,
-           denmark_2_eur_mwh FLOAT,
-           france_eur_mwh FLOAT,
-           netherlands_eur_mwh FLOAT,
-           norway_2_eur_mwh FLOAT,
-           austria_eur_mwh FLOAT,
-           poland_eur_mwh FLOAT,
-           sweden_4_eur_mwh FLOAT,
-           switzerland_eur_mwh FLOAT,
-           czech_republic_eur_mwh FLOAT,
-           de_at_lu_eur_mwh FLOAT,
-           northern_italy_eur_mwh FLOAT,
-           slovenia_eur_mwh FLOAT,
-           hungary_eur_mwh FLOAT
-       );
-    """
-    cursor.execute(new_table_command)
-    conn.commit()
+    columns = fact_market_day_ahead_price.columns.values.tolist()
+       
+    datatypes = {columns[0]: DateTime(timezone=True), 
+                 columns[1]: DateTime(timezone=True), 
+                 columns[2]: Float,
+                 columns[3]: Float,
+                 columns[4]: Float,
+                 columns[5]: Float,
+                 columns[6]: Float,
+                 columns[7]: Float,
+                 columns[8]: Float,
+                 columns[9]: Float,
+                 columns[10]: Float,
+                 columns[11]: Float,
+                 columns[12]: Float,
+                 columns[13]: Float,
+                 columns[14]: Float,
+                 columns[15]: Float,
+                 columns[16]: Float,
+                 columns[17]: Float,
+                 columns[18]: Float
+                 }
         
     # Insert the transformed data into the new table
-    fact_market_day_ahead_price.to_sql('fact_market_day_ahead_price', engine, schema='02_silver', if_exists='replace', index=False)
-
-    print("Data inserted into the database!")
+    print("Inserting data...")
+    fact_market_day_ahead_price.to_sql('fact_market_day_ahead_price', engine, schema='02_silver', if_exists='replace', dtype=datatypes, chunksize=100000, index=False)
+    print("Data inserted!")
     
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)
