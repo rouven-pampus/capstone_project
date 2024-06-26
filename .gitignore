@@ -142,3 +142,6 @@ credentials.py
 
 # MAC configuration
 .DS_Store
+
+# EDA plots
+eda_plots/
