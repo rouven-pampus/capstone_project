@@ -1,5 +1,5 @@
 import psycopg2
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
 from dotenv import load_dotenv
 import os
 import numpy as np
@@ -131,29 +131,24 @@ try:
     merged_weather = merged_weather.drop(columns=['qual_s', 'qual_w', 'qual_t', 'atm_rad'])
     
     # Create table in the database
-    cursor = conn.cursor()
-    new_table_command = """
-       CREATE SCHEMA if not exists "02_silver";
-       DROP TABLE IF EXISTS "02_silver".fact_weather_data;
-       CREATE TABLE IF NOT EXISTS "02_silver".fact_weather_data(
-       weather_station_id TEXT,
-       timestamp TIMESTAMP,
-       w_force FLOAT,
-       w_direc INT,
-       diff_rad INT,
-       glob_rad INT,
-       sun INT,
-       zenith FLOAT,
-       temp FLOAT,
-       humid INT             
-    );
-    """
-    cursor.execute(new_table_command)
-    conn.commit()
-    print("Inserting data...")
+    columns = merged_weather.columns.values.tolist()
+       
+    datatypes = {columns[0]: String, 
+                 columns[1]: DateTime(timezone=True), 
+                 columns[2]: Float,
+                 columns[3]: Float,
+                 columns[4]: Float,
+                 columns[5]: Float,
+                 columns[6]: Float,
+                 columns[7]: Float,
+                 columns[8]: Float,
+                 columns[9]: Float
+                 }
+    
         
     # Insert the transformed data into the new table
-    merged_weather.to_sql('fact_weather_data', engine, schema='02_silver', if_exists='replace', index=False)
+    print("Inserting data...")
+    merged_weather.to_sql('fact_weather_data', engine, schema='02_silver', if_exists='replace', dtype=datatypes, chunksize=100000, index=False)
     print("Data inserted! Rouven is great!")
 
 except Exception as error:

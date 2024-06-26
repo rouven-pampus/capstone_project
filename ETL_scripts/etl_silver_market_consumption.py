@@ -1,7 +1,7 @@
 ####################################### Setup #######################################
 
 import psycopg2
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
 from dotenv import load_dotenv
 import os
 import numpy as np
@@ -40,7 +40,7 @@ try:
     ####################################### EXTRACT #######################################
     
     # Load data from the database using SQLAlchemy engine
-    print("Consumption data loading!")
+    print("Consumption data loading..")
     query_string1 = 'SELECT * FROM "01_bronze"."raw_market_consumption"'
     raw_consumption = pd.read_sql(query_string1, engine)
     print("Loading finished!")
@@ -103,23 +103,18 @@ try:
 
     ####################################### LOAD #######################################
     
-    # Create table in the database
-    cursor = conn.cursor()
-    new_table_command = """
-        CREATE SCHEMA if not exists "02_silver";
-        DROP TABLE IF EXISTS "02_silver".fact_market_consumption_germany;
-        CREATE TABLE IF NOT EXISTS "02_silver".fact_market_consumption_germany(
-        start_date TIMESTAMP,
-        end_date TIMESTAMP,        
-        total_grid_load_consumption FLOAT,
-        residual_load_consumption FLOAT,
-        hydro_pumped_storage_consumption FLOAT            
-    );
-    """
-    cursor.execute(new_table_command)
-    conn.commit()
-        
-    consumption_complete.to_sql('fact_market_consumption_germany', engine, schema='02_silver', if_exists='replace', index=False)
+    # Create table in the database    
+    columns = consumption_complete.columns.values.tolist()
+       
+    datatypes = {columns[0]: DateTime(timezone=True), 
+                 columns[1]: DateTime(timezone=True), 
+                 columns[2]: Float,
+                 columns[3]: Float,
+                 columns[4]: Float
+                 }
+
+    print("Data inserting...")    
+    consumption_complete.to_sql('fact_market_consumption_germany', engine, schema='02_silver', if_exists='replace', dtype=datatypes, chunksize=100000, index=False)
       
     print("Data inserted!")
     
