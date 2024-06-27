@@ -8,8 +8,7 @@ import requests_cache
 import pandas as pd
 from retry_requests import retry
 import requests
-
-####################### get station info from database #######################
+import openmeteo_requests
 
 # Load login data from .env file
 load_dotenv()
@@ -68,7 +67,7 @@ retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
 
 # Function to fetch weather data for a specific station
 def fetch_weather_data(station_id, latitude, longitude):
-    url = "https://api.open-meteo.com/v1/dwd-icon"
+    url = "https://api.open-meteo.com/v1/archive"
     timezone = "Europe/Berlin"
     params = {
         "latitude": latitude,
@@ -86,7 +85,8 @@ def fetch_weather_data(station_id, latitude, longitude):
             "sunshine_duration"
         ],
         "timezone": timezone,
-        "past_days": 1
+        "start_date": "2024-05-01",
+	    "end_date": "2024-05-31",
     }
     response = retry_session.get(url, params=params)
     response.raise_for_status()
@@ -128,4 +128,4 @@ for i in range(len(stations_id)):
 # Combine all data into a single DataFrame
 final_weather_data = pd.concat(all_data, ignore_index=True)
 
-final_weather_data.to_sql('fact_weather_forecast', engine, schema='02_silver', if_exists='replace', index=False)
+final_weather_data.to_sql('fact_weather_history', engine, schema='02_silver', if_exists='replace', index=False)
