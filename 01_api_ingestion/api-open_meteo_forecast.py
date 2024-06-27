@@ -129,4 +129,4 @@ for i in range(len(stations_id)):
 # Combine all data into a single DataFrame
 final_weather_data = pd.concat(all_data, ignore_index=True)
 
-final_weather_data.to_sql('fact_weather_forecast', engine, schema='02_silver', if_exists='replace', index=False)
+final_weather_data.to_sql('raw_weather_forecast', engine, schema='01_bronze', if_exists='replace', index=False)
