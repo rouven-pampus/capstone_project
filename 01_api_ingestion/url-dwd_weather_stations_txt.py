@@ -90,7 +90,7 @@ if isinstance(df.index, pd.MultiIndex):
     df.reset_index(inplace=True)
 
 # Write the DataFrame to the database
-df.to_sql('raw_weather_stations_full', engine, schema='01_bronze', if_exists='replace', dtype=datatypes, index=False)
+df.to_sql('raw_dwd_weather_stations_full', engine, schema='01_bronze', if_exists='replace', dtype=datatypes, index=False)
 
 # Close the connection
 conn.close()
