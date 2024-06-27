@@ -99,11 +99,12 @@ def fetch_weather_data(station_id, latitude, longitude):
         freq=pd.Timedelta(hours=1)
     )
     
-    fetch_timestamp = pd.Timestamp.now(tz=timezone)
+    fetch_timestamp = pd.Timestamp.now(tz=timezone).floor("s")
+    dates = dates.tz_localize('UTC').tz_convert(timezone)
     
     hourly_data = pd.DataFrame({
-        'timestamp_forecast': dates.tz_localize(tz=timezone),
-        'timestamp_fetched': fetch_timestamp.floor("s"),
+        'timestamp_forecast': dates,
+        'timestamp_fetched': fetch_timestamp,
         'stations_id': station_id,
         'temperature_2m': hourly['temperature_2m'],
         'relative_humidity_2m': hourly['relative_humidity_2m'],

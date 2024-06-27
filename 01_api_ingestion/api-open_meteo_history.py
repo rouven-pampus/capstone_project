@@ -67,7 +67,7 @@ retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
 
 # Function to fetch weather data for a specific station
 def fetch_weather_data(station_id, latitude, longitude):
-    url = "https://api.open-meteo.com/v1/archive"
+    url = "https://archive-api.open-meteo.com/v1/archive"
     timezone = "Europe/Berlin"
     params = {
         "latitude": latitude,
@@ -85,7 +85,7 @@ def fetch_weather_data(station_id, latitude, longitude):
             "sunshine_duration"
         ],
         "timezone": timezone,
-        "start_date": "2024-05-01",
+        "start_date": "2024-01-01",
 	    "end_date": "2024-05-31",
     }
     response = retry_session.get(url, params=params)
@@ -99,11 +99,12 @@ def fetch_weather_data(station_id, latitude, longitude):
         freq=pd.Timedelta(hours=1)
     )
     
-    fetch_timestamp = pd.Timestamp.now(tz=timezone)
+    fetch_timestamp = pd.Timestamp.now(tz=timezone).floor("s")
+    dates = dates.tz_localize('UTC').tz_convert(timezone)
     
     hourly_data = pd.DataFrame({
-        'timestamp_forecast': dates.tz_localize(tz=timezone),
-        'timestamp_fetched': fetch_timestamp.floor("s"),
+        'timestamp': dates,
+        'timestamp_fetched': fetch_timestamp,
         'stations_id': station_id,
         'temperature_2m': hourly['temperature_2m'],
         'relative_humidity_2m': hourly['relative_humidity_2m'],
