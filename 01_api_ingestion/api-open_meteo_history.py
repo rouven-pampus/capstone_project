@@ -40,11 +40,8 @@ try:
     print("You are connected to -", record, "\n")
     
     # Load data from the database using SQLAlchemy engine
-    print("Consumption data loading..")
     query_string1 = 'SELECT * FROM "02_silver"."dim_weather_stations"'
-    weather_stations = pd.read_sql(query_string1, engine)
-    print("Loading finished!")
-    
+    weather_stations = pd.read_sql(query_string1, engine)    
     stations_id = weather_stations.stations_id.to_list()    
     stations_latitude = weather_stations.latitude.to_list()
     stations_longitude = weather_stations.longitude.to_list()
