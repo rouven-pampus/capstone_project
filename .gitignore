@@ -128,13 +128,14 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
+# Directories
 data/*.csv
 models/*.sav
 mlruns
 models/*
+eda_plots/
 
-#config file has sensitive data
+# config file has sensitive data
 .mlflow_uri
 
 #secrets
@@ -143,5 +144,5 @@ credentials.py
 # MAC configuration
 .DS_Store
 
-# EDA plots
-eda_plots/
+# database files
+.cache.sqlite
