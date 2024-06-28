@@ -7,9 +7,6 @@ import os
 import requests_cache
 import pandas as pd
 from retry_requests import retry
-import requests
-import pytz
-import datetime as dt
 
 ####################### get station info from database #######################
 

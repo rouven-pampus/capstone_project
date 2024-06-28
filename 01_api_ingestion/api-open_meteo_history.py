@@ -7,8 +7,6 @@ import os
 import requests_cache
 import pandas as pd
 from retry_requests import retry
-import requests
-import openmeteo_requests
 
 # Load login data from .env file
 load_dotenv()
@@ -62,14 +60,8 @@ finally:
 cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
 retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
 
-# Function to fetch weather data for a specific station
-def fetch_weather_data(station_id, latitude, longitude):
-    url = "https://archive-api.open-meteo.com/v1/archive"
-    timezone = "Europe/Berlin"
-    params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "hourly": [
+timezone = "Europe/Berlin"
+weather_variables = [
             "temperature_2m",
             "relative_humidity_2m",
             "apparent_temperature",
@@ -80,7 +72,16 @@ def fetch_weather_data(station_id, latitude, longitude):
             "direct_radiation",
             "diffuse_radiation",
             "sunshine_duration"
-        ],
+        ]
+
+# Function to fetch weather data for a specific station
+def fetch_weather_data(station_id, latitude, longitude):
+    url = "https://archive-api.open-meteo.com/v1/archive"
+    timezone = "Europe/Berlin"
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "hourly": weather_variables,
         "timezone": timezone,
         "start_date": "2024-01-01",
 	    "end_date": "2024-05-31",
@@ -96,12 +97,12 @@ def fetch_weather_data(station_id, latitude, longitude):
         freq=pd.Timedelta(hours=1)
     )
     
-    fetch_timestamp = pd.Timestamp.now(tz=timezone).floor("s")
-    dates = dates.tz_localize('UTC').tz_convert(timezone)
+    dates = dates.tz_localize(timezone, ambiguous='NaT', nonexistent='shift_forward')
+    timestamp_fetched = pd.to_datetime('today').tz_localize(timezone).floor('s')
     
     hourly_data = pd.DataFrame({
         'timestamp': dates,
-        'timestamp_fetched': fetch_timestamp,
+        'timestamp_fetched': timestamp_fetched,
         'stations_id': station_id,
         'temperature_2m': hourly['temperature_2m'],
         'relative_humidity_2m': hourly['relative_humidity_2m'],
@@ -119,6 +120,7 @@ def fetch_weather_data(station_id, latitude, longitude):
 
 all_data = []
 
+print("Fetching data from API...")
 for i in range(len(stations_id)):
     station_data = fetch_weather_data(stations_id[i], stations_latitude[i], stations_longitude[i])
     all_data.append(station_data)
@@ -126,4 +128,5 @@ for i in range(len(stations_id)):
 # Combine all data into a single DataFrame
 final_weather_data = pd.concat(all_data, ignore_index=True)
 
+print("Inserting data into database...")
 final_weather_data.to_sql('raw_open_meteo_weather_history', engine, schema='01_bronze', if_exists='fail', index=False)
