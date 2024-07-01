@@ -7,8 +7,8 @@ import os
 import requests_cache
 import pandas as pd
 from retry_requests import retry
-
-####################### get station info from database #######################
+from datetime import timedelta
+import numpy as np
 
 # Load login data from .env file
 load_dotenv()
@@ -33,19 +33,22 @@ conn = psycopg2.connect(
     port=DB_PORT
 )
 
+####################### 1. Get list of coordinates of used weather stations from dim_weather_stations  #######################
+
 try:
     cursor = conn.cursor()
     cursor.execute("SELECT version();")
     record = cursor.fetchone()
     print("You are connected to -", record, "\n")
     
-    # Load data from the database using SQLAlchemy engine   
+    print("Retreiving list of weather stations...")
+    # Load coordinates of used weather stations from database for fetching data from open-meteo api
     query_string1 = 'SELECT * FROM "02_silver"."dim_weather_stations"'
     weather_stations = pd.read_sql(query_string1, engine)    
     stations_id = weather_stations.stations_id.to_list()    
     stations_latitude = weather_stations.latitude.to_list()
     stations_longitude = weather_stations.longitude.to_list()
-
+        
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)
     
@@ -54,8 +57,8 @@ finally:
         cursor.close()
         conn.close()
         print("PostgreSQL connection is closed")
-
-
+ 
+        
 ####################### get weather forecast from api and push it into new table #######################
 
 # Setup the Open-Meteo API client with cache and retry on error
@@ -98,11 +101,9 @@ def fetch_weather_data(station_id, latitude, longitude):
     )
     
     dates = dates.tz_localize(timezone, ambiguous='NaT', nonexistent='shift_forward')
-    timestamp_fetched = pd.to_datetime('today').tz_localize(timezone).floor('h')
         
     hourly_data = pd.DataFrame({
         'timestamp': dates,
-        'timestamp_fetched': timestamp_fetched,
         'stations_id': station_id,
         'temperature_2m': hourly['temperature_2m'],
         'relative_humidity_2m': hourly['relative_humidity_2m'],
@@ -126,10 +127,12 @@ for i in range(len(stations_id)):
     all_data.append(station_data)    
     
 # Combine all data into a single DataFrame
-final_weather_data = pd.concat(all_data, ignore_index=True)
+forecast_weather_data = pd.concat(all_data, ignore_index=True)
 
-#add difference between timestamp of observation and fetched time 
-final_weather_data["forecast_hours"] = ((final_weather_data['timestamp'] - final_weather_data['timestamp_fetched']).dt.total_seconds() / 3600).astype(int)
+#add difference between timestamp of observation and fetched time
+timestamp_fetched = pd.to_datetime('today').tz_localize(timezone).floor('h')
+forecast_weather_data["forecast_hours"] = ((forecast_weather_data['timestamp'] - timestamp_fetched).dt.total_seconds() / 3600).astype(int)
+forecast_weather_data["is_forecast"] = np.where(forecast_weather_data.forecast_hours > 0, "yes","no" )
 
 print("Inserting data into database...")  
-final_weather_data.to_sql('raw_open_meteo_weather_forecast', engine, schema='01_bronze', if_exists='replace', index=False)
+forecast_weather_data.to_sql('raw_open_meteo_weather_forecast', engine, schema='01_bronze', if_exists='replace', index=False)

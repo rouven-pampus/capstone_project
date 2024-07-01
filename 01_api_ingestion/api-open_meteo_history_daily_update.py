@@ -166,7 +166,6 @@ try:
     record = cursor.fetchone()
     print("You are connected to -", record, "\n")
     
-    print("Union new weather data with history of weather data...")
     # Insert new data into old history table
     query_string1 = """
     INSERT INTO "01_bronze".raw_open_meteo_weather_history (
@@ -197,14 +196,17 @@ try:
         diffuse_radiation,
         sunshine_duration
     FROM "01_bronze".raw_open_meteo_weather_history_update_temp
-    ON CONFLICT do nothing;
+    ON CONFLICT do nothing;    
     """
+    #Statement to drop temporary table
+    query_string2 = """Drop table "01_bronze".raw_open_meteo_weather_history_update_temp;"""
     
-    query_string2 = 'Drop table "01_bronze".raw_open_meteo_weather_history_update_temp;'
-        
-    cursor = conn.cursor()
+    print("Insert new weather data with history of weather data...")
     cursor.execute(query_string1)
+    
+    print("Droping temp table...")
     cursor.execute(query_string2)
+    conn.commit()
     
     print("Update done!")
     
