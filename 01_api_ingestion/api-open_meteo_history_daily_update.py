@@ -7,6 +7,7 @@ import os
 import requests_cache
 import pandas as pd
 from retry_requests import retry
+from datetime import timedelta
 
 # Load login data from .env file
 load_dotenv()
@@ -31,19 +32,22 @@ conn = psycopg2.connect(
     port=DB_PORT
 )
 
+####################### 1. Get list of coordinates of used weather stations from dim_weather_stations  #######################
+
 try:
     cursor = conn.cursor()
     cursor.execute("SELECT version();")
     record = cursor.fetchone()
     print("You are connected to -", record, "\n")
     
-    # Load data from the database using SQLAlchemy engine
+    print("Retreiving list of weather stations...")
+    # Load coordinates of used weather stations from database for fetching data from open-meteo api
     query_string1 = 'SELECT * FROM "02_silver"."dim_weather_stations"'
     weather_stations = pd.read_sql(query_string1, engine)    
     stations_id = weather_stations.stations_id.to_list()    
     stations_latitude = weather_stations.latitude.to_list()
     stations_longitude = weather_stations.longitude.to_list()
-
+        
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)
     
@@ -52,9 +56,8 @@ finally:
         cursor.close()
         conn.close()
         print("PostgreSQL connection is closed")
-
-
-####################### get weather forecast from api and push it into new table #######################
+        
+####################### 2. Fetch weather data from api for all used weather stations  #######################
 
 # Setup the Open-Meteo API client with cache and retry on error
 cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
@@ -74,6 +77,9 @@ weather_variables = [
             "sunshine_duration"
         ]
 
+start_date = (pd.to_datetime("today") - timedelta(days=7)).strftime("%Y-%m-%d") #lookback window of 7 days to limit load of retrieved data 
+end_date = (pd.to_datetime("today") - timedelta(days=2)).strftime("%Y-%m-%d") #cut-off date to avoid null values 
+
 # Function to fetch weather data for a specific station
 def fetch_weather_data(station_id, latitude, longitude):
     url = "https://archive-api.open-meteo.com/v1/archive"
@@ -83,8 +89,8 @@ def fetch_weather_data(station_id, latitude, longitude):
         "longitude": longitude,
         "hourly": weather_variables,
         "timezone": timezone,
-        "start_date": "2024-01-01",
-	    "end_date": "2024-05-31",
+        "start_date": start_date,
+	    "end_date": end_date,
     }
     response = retry_session.get(url, params=params)
     response.raise_for_status()
@@ -124,7 +130,89 @@ for i in range(len(stations_id)):
     all_data.append(station_data)
 
 # Combine all data into a single DataFrame
-final_weather_data = pd.concat(all_data, ignore_index=True)
+new_weather_data = pd.concat(all_data, ignore_index=True)
 
-print("Inserting data into database...")
-final_weather_data.to_sql('raw_open_meteo_weather_history', engine, schema='01_bronze', if_exists='fail', index=False)
+print("Inserting data into temporary table on database...")
+new_weather_data.to_sql('raw_open_meteo_weather_history_update_temp', engine, schema='01_bronze', if_exists='replace', index=False)
+
+        
+####################### 3. Execute statement to Insert temp table into raw table of historic data  #######################       
+
+# Load login data from .env file
+load_dotenv()
+
+DB_NAME = os.getenv('DB_NAME')
+DB_USERNAME = os.getenv('DB_USERNAME')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
+
+DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+
+# Create SQLAlchemy engine
+engine = create_engine(DB_STRING)
+
+# Create a new connection using psycopg2 for non-pandas operations
+conn = psycopg2.connect(
+    database=DB_NAME,
+    user=DB_USERNAME,
+    password=DB_PASSWORD,
+    host=DB_HOST,
+    port=DB_PORT
+)
+try:
+    cursor = conn.cursor()
+    cursor.execute("SELECT version();")
+    record = cursor.fetchone()
+    print("You are connected to -", record, "\n")
+    
+    print("Union new weather data with history of weather data...")
+    # Insert new data into old history table
+    query_string1 = """
+    INSERT INTO "01_bronze".raw_open_meteo_weather_history (
+        timestamp,
+        stations_id,
+        temperature_2m,
+        relative_humidity_2m,
+        apparent_temperature,
+        precipitation,
+        cloud_cover,
+        wind_speed_10m,
+        wind_direction_10m,
+        direct_radiation,
+        diffuse_radiation,
+        sunshine_duration
+    )
+    SELECT
+        timestamp,
+        stations_id,
+        temperature_2m,
+        relative_humidity_2m,
+        apparent_temperature,
+        precipitation,
+        cloud_cover,
+        wind_speed_10m,
+        wind_direction_10m,
+        direct_radiation,
+        diffuse_radiation,
+        sunshine_duration
+    FROM "01_bronze".raw_open_meteo_weather_history_update_temp
+    ON CONFLICT do nothing;
+    """
+    
+    query_string2 = 'Drop table "01_bronze".raw_open_meteo_weather_history_update_temp;'
+        
+    cursor = conn.cursor()
+    cursor.execute(query_string1)
+    cursor.execute(query_string2)
+    
+    print("Update done!")
+    
+except Exception as error:
+    print("Error while connecting to PostgreSQL:", error)
+    
+finally:
+    if conn:
+        cursor.close()
+        conn.close()
+        print("PostgreSQL connection is closed")
