@@ -98,11 +98,9 @@ def fetch_weather_data(station_id, latitude, longitude):
     )
     
     dates = dates.tz_localize(timezone, ambiguous='NaT', nonexistent='shift_forward')
-    timestamp_fetched = pd.to_datetime('today').tz_localize(timezone).floor('s')
     
     hourly_data = pd.DataFrame({
         'timestamp': dates,
-        'timestamp_fetched': timestamp_fetched,
         'stations_id': station_id,
         'temperature_2m': hourly['temperature_2m'],
         'relative_humidity_2m': hourly['relative_humidity_2m'],
