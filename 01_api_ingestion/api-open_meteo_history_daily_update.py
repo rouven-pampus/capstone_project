@@ -77,8 +77,8 @@ weather_variables = [
             "sunshine_duration"
         ]
 
-start_date = end_date = (pd.to_datetime("today") - timedelta(days=7)).strftime("%Y-%m-%d") #lookback window of 7 days to limit load of retrieved data 
-end_date = end_date = (pd.to_datetime("today") - timedelta(days=2)).strftime("%Y-%m-%d") #cut-off date to avoid null values 
+start_date = (pd.to_datetime("today") - timedelta(days=7)).strftime("%Y-%m-%d") #lookback window of 7 days to limit load of retrieved data 
+end_date = (pd.to_datetime("today") - timedelta(days=2)).strftime("%Y-%m-%d") #cut-off date to avoid null values 
 
 # Function to fetch weather data for a specific station
 def fetch_weather_data(station_id, latitude, longitude):
@@ -130,13 +130,13 @@ for i in range(len(stations_id)):
     all_data.append(station_data)
 
 # Combine all data into a single DataFrame
-new_weather_date = pd.concat(all_data, ignore_index=True)
+new_weather_data = pd.concat(all_data, ignore_index=True)
 
 print("Inserting data into temporary table on database...")
-new_weather_date.to_sql('"01_bronze".raw_open_meteo_weather_history_update_temp', engine, schema='01_bronze', if_exists='replace', index=False)
+new_weather_data.to_sql('raw_open_meteo_weather_history_update_temp', engine, schema='01_bronze', if_exists='replace', index=False)
 
         
-####################### 3. Execute statement to Union temp table into raw table of historic data  #######################       
+####################### 3. Execute statement to Insert temp table into raw table of historic data  #######################       
 
 # Load login data from .env file
 load_dotenv()
@@ -199,9 +199,12 @@ try:
     FROM "01_bronze".raw_open_meteo_weather_history_update_temp
     ON CONFLICT do nothing;
     """
+    
+    query_string2 = 'Drop table "01_bronze".raw_open_meteo_weather_history_update_temp;'
         
     cursor = conn.cursor()
     cursor.execute(query_string1)
+    cursor.execute(query_string2)
     
     print("Update done!")
     
