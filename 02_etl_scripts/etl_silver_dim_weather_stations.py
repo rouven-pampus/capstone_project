@@ -37,7 +37,7 @@ try:
     # Load data from the database using SQLAlchemy engine
     query = """
     SELECT
-        "Stations_ID"::text AS "stations_id",
+        "Stations_ID"::text AS "station_id",
         "Stationsname"::text AS "station_name",
         "Breite"::float as "latitude",
         "Länge"::float as "longitude",
@@ -51,9 +51,9 @@ try:
     
     df_weather_stations = pd.read_sql(query, engine)
     
-    stations_id_list =["183","662","691","853","1048","1358","5856","1684","1975","2290","2712","3015","3631","3668","3987","4271","4336","4393","4466","4928","5100","5404","5705","5792"]    
+    station_id_list =["183","662","691","853","1048","1358","5856","1684","1975","2290","2712","3015","3631","3668","3987","4271","4336","4393","4466","4928","5100","5404","5705","5792"]    
     
-    df_weather_stations.query("stations_id == @stations_id_list", inplace=True)
+    df_weather_stations.query("station_id == @station_id_list", inplace=True)
     
     df_weather_stations.to_sql('dim_weather_stations', engine, schema='02_silver', if_exists='replace', index=False)
         

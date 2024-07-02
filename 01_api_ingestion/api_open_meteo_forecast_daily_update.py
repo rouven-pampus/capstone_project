@@ -45,7 +45,7 @@ try:
     # Load coordinates of used weather stations from database for fetching data from open-meteo api
     query_string1 = 'SELECT * FROM "02_silver"."dim_weather_stations"'
     weather_stations = pd.read_sql(query_string1, engine)    
-    stations_id = weather_stations.stations_id.to_list()    
+    station_id = weather_stations.station_id.to_list()    
     stations_latitude = weather_stations.latitude.to_list()
     stations_longitude = weather_stations.longitude.to_list() 
  
@@ -98,7 +98,7 @@ try:
         hourly_data = pd.DataFrame({
             'timestamp': dates,
             'timestamp_fetched': timestamp_fetched,
-            'stations_id': station_id,
+            'station_id': station_id,
             'temperature_2m': hourly['temperature_2m'],
             'relative_humidity_2m': hourly['relative_humidity_2m'],
             'apparent_temperature': hourly['apparent_temperature'],
@@ -116,8 +116,8 @@ try:
     all_data = []
 
     print("Fetching data from API...")
-    for i in range(len(stations_id)):
-        station_data = fetch_weather_data(stations_id[i], stations_latitude[i], stations_longitude[i])
+    for i in range(len(station_id)):
+        station_data = fetch_weather_data(station_id[i], stations_latitude[i], stations_longitude[i])
         all_data.append(station_data)    
         
     # Combine all data into a single DataFrame
@@ -138,9 +138,9 @@ try:
     #recreate view
     query_string3 = """
         CREATE OR REPLACE VIEW "02_silver".fact_full_weather AS
-        SELECT DISTINCT ON (timestamp, stations_id)
+        SELECT DISTINCT ON (timestamp, station_id)
             timestamp,
-            stations_id,
+            station_id,
             temperature_2m,
             relative_humidity_2m,
             apparent_temperature,
@@ -156,7 +156,7 @@ try:
         FROM ( 
             SELECT
                 timestamp,
-                stations_id,
+                station_id,
                 temperature_2m,
                 relative_humidity_2m,
                 apparent_temperature,
@@ -173,7 +173,7 @@ try:
             UNION ALL
             SELECT
                 timestamp,
-                stations_id,
+                station_id,
                 temperature_2m,
                 relative_humidity_2m,
                 apparent_temperature,
@@ -188,7 +188,7 @@ try:
                 'forecast' AS source_table
             FROM "01_bronze".raw_open_meteo_weather_forecast romwf
         ) AS combined_weather
-        ORDER BY stations_id ASC, timestamp DESC, source_table DESC;       
+        ORDER BY station_id ASC, timestamp DESC, source_table DESC;       
     """
     cursor.execute(query_string3)
     conn.commit()   
