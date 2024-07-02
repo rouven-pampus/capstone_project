@@ -167,7 +167,7 @@ try:
     print("You are connected to -", record, "\n")
     
     # Insert new data into old history table
-    query_string1 = """
+    query_string1 = """    
     INSERT INTO "01_bronze".raw_open_meteo_weather_history (
         timestamp,
         stations_id,
@@ -196,7 +196,18 @@ try:
         diffuse_radiation,
         sunshine_duration
     FROM "01_bronze".raw_open_meteo_weather_history_update_temp
-    ON CONFLICT do nothing;    
+    ON CONFLICT (timestamp, stations_id) 
+    DO UPDATE SET 
+        temperature_2m = EXCLUDED.temperature_2m,
+        relative_humidity_2m = EXCLUDED.relative_humidity_2m,
+        apparent_temperature = EXCLUDED.apparent_temperature,
+        precipitation = EXCLUDED.precipitation,
+        cloud_cover = EXCLUDED.cloud_cover,
+        wind_speed_10m = EXCLUDED.wind_speed_10m,
+        wind_direction_10m = EXCLUDED.wind_direction_10m,
+        direct_radiation = EXCLUDED.direct_radiation,
+        diffuse_radiation = EXCLUDED.diffuse_radiation,
+        sunshine_duration = EXCLUDED.sunshine_duration;
     """
     #Statement to drop temporary table
     query_string2 = """Drop table "01_bronze".raw_open_meteo_weather_history_update_temp;"""
