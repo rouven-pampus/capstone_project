@@ -84,7 +84,7 @@ def fetch_weather_data(station_id, latitude, longitude):
         "longitude": longitude,
         "hourly": weather_variables,
         "timezone": timezone,
-        "past_days": 1
+        "past_days": 2
     }
     response = retry_session.get(url, params=params)
     response.raise_for_status()
@@ -98,10 +98,10 @@ def fetch_weather_data(station_id, latitude, longitude):
     )
     
     dates = dates.tz_localize(timezone, ambiguous='NaT', nonexistent='shift_forward')
-    timestamp_fetched = pd.to_datetime('today').tz_localize(timezone).floor('s')
+    timestamp_fetched = pd.to_datetime('today').tz_localize(timezone).floor('h')
         
     hourly_data = pd.DataFrame({
-        'timestamp_forecast': dates,
+        'timestamp': dates,
         'timestamp_fetched': timestamp_fetched,
         'stations_id': station_id,
         'temperature_2m': hourly['temperature_2m'],
@@ -127,6 +127,9 @@ for i in range(len(stations_id)):
     
 # Combine all data into a single DataFrame
 final_weather_data = pd.concat(all_data, ignore_index=True)
+
+#add difference between timestamp of observation and fetched time 
+final_weather_data["forecast_hours"] = ((final_weather_data['timestamp'] - final_weather_data['timestamp_fetched']).dt.total_seconds() / 3600).astype(int)
 
 print("Inserting data into database...")  
 final_weather_data.to_sql('raw_open_meteo_weather_forecast', engine, schema='01_bronze', if_exists='replace', index=False)
