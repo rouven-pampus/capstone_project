@@ -56,7 +56,11 @@ try:
     ORDER BY 
        "Stationsname";    
     """
+    
     df_weather_stations = pd.read_sql(query, engine)
+    
+    
+    
     
     df_weather_stations.to_sql('dim_weather_stations', engine, schema='02_silver', if_exists='replace', index=False)
         
