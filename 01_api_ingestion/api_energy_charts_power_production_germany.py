@@ -54,4 +54,4 @@ df_power = pd.DataFrame(data_dict)
 df_power['timestamp'] = pd.to_datetime(df_power['timestamp'], unit='s')
 df_power["timestamp"] = df_power.timestamp.dt.tz_localize("UTC").dt.tz_convert("Europe/Berlin")
 
-df_power.to_sql('raw_energy_charts_power_germany', engine, schema='01_bronze', if_exists='replace', index=False)
+df_power.to_sql('raw_energy_charts_total_power_germany', engine, schema='01_bronze', if_exists='replace', index=False)
