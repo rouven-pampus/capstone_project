@@ -30,7 +30,7 @@ conn = psycopg2.connect(
 
 bzn = "DE-LU"
 start = "2018-10-01"
-end = "2024-07-05"
+end = "2024-07-06"
 
 url = f"https://api.energy-charts.info/price?bzn={bzn}&start={start}&end={end}"
 
