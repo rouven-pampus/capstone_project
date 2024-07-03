@@ -184,7 +184,7 @@ try:
                 direct_radiation,
                 diffuse_radiation,
                 sunshine_duration,
-                'yes' AS is_forecast,
+                is_forecast,
                 'forecast' AS source_table
             FROM "01_bronze".raw_open_meteo_weather_forecast romwf
         ) AS combined_weather
