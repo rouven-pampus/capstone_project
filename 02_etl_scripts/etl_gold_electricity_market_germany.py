@@ -4,6 +4,7 @@ import psycopg2
 from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
 from dotenv import load_dotenv
 import os
+from datetime import datetime, timedelta
 
 # Load login data from .env file
 load_dotenv()
@@ -77,7 +78,7 @@ try:
     }
     
     #aggregating to full hour
-    df_power.groupby(df_power.timestamp.dt.floor('H')).agg(power_aggregation).reset_index()
+    df_power = df_power.groupby(df_power.timestamp.dt.floor('H')).agg(power_aggregation).reset_index()
     
     # Define the desired order of columns
     new_column_order = [
@@ -121,7 +122,7 @@ try:
     df_prices.rename(columns={'de_lu': 'price_eur_mwh'}, inplace=True)
     
     ############################ Weather Table
-    
+
     print("Transforming weather data...")
     #Define aggregation
     weather_aggregation = {
@@ -138,10 +139,10 @@ try:
     }
 
     #drop columns
-    df_weather.drop(['station_id','source_table'], axis=1, inplace=True)
+    df_weather.drop(['station_id','source_table', 'is_forecast'], axis=1, inplace=True)
 
     #aggregate
-    df_weather.groupby(['timestamp', 'is_forecast']).agg(weather_aggregation).reset_index()
+    df_weather = df_weather.groupby(['timestamp']).agg(weather_aggregation).reset_index().sort_values(by='timestamp', ascending=True)
     
     
     ############################ 2. Merge of tables ############################
@@ -152,6 +153,10 @@ try:
 
     # Merge the resulting DataFrame with df_prices on 'timestamp'
     combined_df = pd.merge(combined_df, df_prices, on='timestamp')
+    
+    
+    #correct error with timezone handling between postgres and pandas
+    combined_df['timestamp'] = combined_df['timestamp'].dt.tz_convert('Europe/Berlin') - timedelta(hours=2)
         
     ############################ 3. Load to database ############################
     print("Loading new table...")
