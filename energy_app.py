@@ -3,14 +3,13 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from PIL import Image
-import psycopg2
-from my_package.db_utils import get_data_from_db
+from database.db_utils import get_data_from_db
 
 #Example text
 st.title('Our amazing, world-changing app :sunglasses:')
 st.header('One Ring to rule them all, One Ring to find them, One Ring to bring them all and in the darkness bind them.')
 
-logo = Image.open('03_streamlit_app/images/image.png')
+logo = Image.open('images/logo.png')
 st.logo(logo, icon_image=logo)
 
 query_string= """
