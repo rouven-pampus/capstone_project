@@ -140,9 +140,11 @@ eda_plots/
 
 #secrets
 credentials.py
+.streamlit/secrets.toml
 
 # MAC configuration
 .DS_Store
 
 # database files
 .cache.sqlite
+
