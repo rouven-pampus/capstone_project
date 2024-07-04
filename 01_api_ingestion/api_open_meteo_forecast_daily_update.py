@@ -126,72 +126,9 @@ try:
     #add difference between timestamp of observation and fetched time
     forecast_weather_data["is_forecast"] = np.where(forecast_weather_data.timestamp > timestamp_fetched, "yes","no" )
 
-    # dropping view
-    query_string2 = """DROP VIEW IF EXISTS "02_silver".fact_full_weather;"""
-    cursor.execute(query_string2)
-    conn.commit()
-
     # inserting data into database
     print("Inserting data into database...")  
-    forecast_weather_data.to_sql('raw_open_meteo_weather_forecast', engine, schema='01_bronze', if_exists='replace', index=False)
-
-    #recreate view
-    query_string3 = """
-        CREATE OR REPLACE VIEW "02_silver".fact_full_weather AS
-        SELECT DISTINCT ON (timestamp, station_id)
-            timestamp,
-            station_id,
-            temperature_2m,
-            relative_humidity_2m,
-            apparent_temperature,
-            precipitation,
-            cloud_cover,
-            wind_speed_10m,
-            wind_direction_10m,
-            direct_radiation,
-            diffuse_radiation,
-            sunshine_duration,
-            is_forecast,
-            source_table
-        FROM ( 
-            SELECT
-                timestamp,
-                station_id,
-                temperature_2m,
-                relative_humidity_2m,
-                apparent_temperature,
-                precipitation,
-                cloud_cover,
-                wind_speed_10m,
-                wind_direction_10m,
-                direct_radiation,
-                diffuse_radiation,
-                sunshine_duration,
-                'no' AS is_forecast,
-                'hist' AS source_table
-            FROM "01_bronze".raw_open_meteo_weather_history romwh
-            UNION ALL
-            SELECT
-                timestamp,
-                station_id,
-                temperature_2m,
-                relative_humidity_2m,
-                apparent_temperature,
-                precipitation,
-                cloud_cover,
-                wind_speed_10m,
-                wind_direction_10m,
-                direct_radiation,
-                diffuse_radiation,
-                sunshine_duration,
-                is_forecast,
-                'forecast' AS source_table
-            FROM "01_bronze".raw_open_meteo_weather_forecast romwf
-        ) AS combined_weather
-        ORDER BY station_id ASC, timestamp DESC, source_table DESC;       
-    """
-    cursor.execute(query_string3)
-    conn.commit()   
+    forecast_weather_data.to_sql('raw_open_meteo_weather_forecast', engine, schema='01_bronze', if_exists='replace', index=False)     
 
 except Exception as error:
     print("Error while connecting to PostgreSQL:", error)
