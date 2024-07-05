@@ -62,7 +62,6 @@ def get_data_from_db(sql_string):
         
         # Create SQLAlchemy engine
         DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-        print("DB_STRING:", DB_STRING)
         
         # Create an SQLAlchemy engine
         engine = create_engine(DB_STRING)    
@@ -72,6 +71,29 @@ def get_data_from_db(sql_string):
             df = pd.read_sql_query(sql_string, conn)
         
         return df
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return None   
+    
+    
+def get_engine():
+    try:
+        # Load login data from .env file
+        load_dotenv()
+        
+        DB_NAME = os.getenv('DB_NAME')
+        DB_USERNAME = os.getenv('DB_USERNAME')
+        DB_PASSWORD = os.getenv('DB_PASSWORD')
+        DB_HOST = os.getenv('DB_HOST')
+        DB_PORT = os.getenv('DB_PORT')    
+        
+        # Create SQLAlchemy engine
+        DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'    
+        
+        # Create an SQLAlchemy engine
+        engine = create_engine(DB_STRING)
+        return engine
     
     except Exception as e:
         print(f"Error: {e}")
