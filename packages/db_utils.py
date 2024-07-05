@@ -50,41 +50,29 @@ def get_data_from_db(sql_string):
     Returns:
     DataFrame: A pandas DataFrame containing the results of the query.
     """
-    # Load login data from .env file
-    load_dotenv()
-    
-    DB_NAME = os.getenv('DB_NAME')
-    DB_USERNAME = os.getenv('DB_USERNAME')
-    DB_PASSWORD = os.getenv('DB_PASSWORD')
-    DB_HOST = os.getenv('DB_HOST')
-    DB_PORT = os.getenv('DB_PORT')    
-    
-    # Create SQLAlchemy engine
-    DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-    engine = create_engine(DB_STRING)    
-
-    # Establish the connection
-    conn = psycopg2.connect(
-        database=DB_NAME,
-        user=DB_USERNAME,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT
-    )    
-    
-    try:                
-        cursor = conn.cursor()
-                        
-        # Execute the query and fetch the data into a DataFrame
-        df = pd.read_sql_query(sql_string, conn)                
-        return df
+    try:
+        # Load login data from .env file
+        load_dotenv()
         
-    except Exception as error:
-        print(f"An error occurred: {error}")
-        return None
+        DB_NAME = os.getenv('DB_NAME')
+        DB_USERNAME = os.getenv('DB_USERNAME')
+        DB_PASSWORD = os.getenv('DB_PASSWORD')
+        DB_HOST = os.getenv('DB_HOST')
+        DB_PORT = os.getenv('DB_PORT')    
+        
+        # Create SQLAlchemy engine
+        DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+        print("DB_STRING:", DB_STRING)
+        
+        # Create an SQLAlchemy engine
+        engine = create_engine(DB_STRING)    
+        
+        # Use the engine to connect to the database and read the SQL query into a DataFrame
+        with engine.connect() as conn:
+            df = pd.read_sql_query(sql_string, conn)
+        
+        return df
     
-    finally:
-        if conn:
-            cursor.close()
-            conn.close()
-            print("PostgreSQL connection is closed")
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
