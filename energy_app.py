@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from PIL import Image
-from database.db_utils import get_data_from_db
+from packages.db_utils import get_data_from_db_st
 
 #Example text
 st.title('Our amazing, world-changing app :sunglasses:')
@@ -20,7 +20,7 @@ query_string= """
         FROM "02_silver".fact_day_ahead_prices_germany
     );
 """
-df_prices = get_data_from_db(query_string)
+df_prices = get_data_from_db_st(query_string)
 
 df_prices["timestamp"] = df_prices["timestamp"].dt.tz_convert("Europe/Berlin")
 
