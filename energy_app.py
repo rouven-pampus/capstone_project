@@ -29,8 +29,15 @@ query_prices = """ SELECT timestamp, de_lu as price, unit
         FROM "02_silver".fact_day_ahead_prices_germany
     );
 """
+
+#Cache data for faster loading times
+@st.cache_data
+def load_data(query):
+    data = get_data_from_db_st(query)
+    return data
+
 #Load price data
-df_prices = get_data_from_db_st(query_prices)
+df_prices = load_data(query_prices)
 
 ################## data transformation ##################
 
@@ -97,7 +104,7 @@ def create_bar_chart(x_data, y_data, title, x_title, y_title):
 ################## Design elements ##################
 
 #Example text
-st.title('Our amazing, world-changing app :sunglasses:')
+st.title('Insights into insights into insights :sunglasses:')
 
 col1, col2, col3 = st.columns(spec=3, gap="large")
 with col1:
