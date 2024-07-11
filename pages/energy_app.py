@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from packages.db_utils import get_data_from_db_st, get_engine
+from packages.db_utils import st_get_engine
 from packages.streamlit_app import get_timeframe
 import plotly.express as px
 import plotly.graph_objects as go
@@ -29,8 +29,8 @@ query_prices = """ SELECT timestamp, de_lu as price, unit
         FROM "02_silver".fact_day_ahead_prices_germany
     );
 """
-#Load price data
-df_prices = get_data_from_db_st(query_prices)
+
+df_prices = pd.read_sql(query_prices, st_get_engine())
 
 ################## data transformation ##################
 
@@ -96,8 +96,16 @@ def create_bar_chart(x_data, y_data, title, x_title, y_title):
 
 ################## Design elements ##################
 
+timeframe_radio = st.sidebar.selectbox("Daily prices for:", timeframe_entries, index=2)
+
+unit_radio = st.sidebar.selectbox("select unit",["€/MWh","ct€/KWh"])
+if unit_radio == "€/MWh":
+    x = 1
+elif unit_radio == "ct€/KWh":
+    x = 10  
+
 #Example text
-st.title('Our amazing, world-changing app :sunglasses:')
+st.title('Insights into insights into insights :sunglasses:')
 
 col1, col2, col3 = st.columns(spec=3, gap="large")
 with col1:
@@ -107,14 +115,14 @@ with col2:
 
     
 col1, col2, col3 = st.columns(spec=3, gap="large")
-with col1 :
-    timeframe_radio = st.selectbox("Daily prices for:", timeframe_entries, index=2)
-with col2:
-    unit_radio = st.selectbox("select unit",["€/MWh","ct€/KWh"])
-    if unit_radio == "€/MWh":
-        x = 1
-    elif unit_radio == "ct€/KWh":
-        x = 10          
+#with col1 :
+    
+#with col2:
+    #unit_radio = st.selectbox("select unit",["€/MWh","ct€/KWh"])
+    #if unit_radio == "€/MWh":
+    #    x = 1
+    #elif unit_radio == "ct€/KWh":
+    #    x = 10          
 with col3:
     st.metric(label ="Current price", value = f"{round(current_price/x,2)} {unit_radio}", delta= f"{round(price_delta/x,2)} {unit_radio}", delta_color="inverse")
 

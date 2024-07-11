@@ -4,41 +4,7 @@ import streamlit as st
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 import os
-
-def get_data_from_db_st(sql_string):
-    """
-    Connects to the PostgreSQL database and returns a DataFrame based on the given SQL query.
-
-    Parameters:
-    sql_query (str): The SQL query to execute.
-
-    Returns:
-    DataFrame: A pandas DataFrame containing the results of the query.
-    """
-    try:
-        # Get the secrets
-        postgres_secrets = st.secrets["postgres"]
-
-        # Establish the connection
-        conn = psycopg2.connect(
-            host = postgres_secrets["host"],
-            port = postgres_secrets["port"],
-            dbname = postgres_secrets["dbname"],
-            user = postgres_secrets["user"],
-            password = postgres_secrets["password"]
-        )
-        
-        # Execute the query and fetch the data into a DataFrame
-        df = pd.read_sql_query(sql_string, conn)
-        
-        conn.close()
-        
-        return df
-        
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
-    
+   
     
 def get_data_from_db(sql_string):
     """
@@ -77,24 +43,35 @@ def get_data_from_db(sql_string):
         return None   
     
     
-def get_engine():
-    try:
-        # Load login data from .env file
-        load_dotenv()
-        
-        DB_NAME = os.getenv('DB_NAME')
-        DB_USERNAME = os.getenv('DB_USERNAME')
-        DB_PASSWORD = os.getenv('DB_PASSWORD')
-        DB_HOST = os.getenv('DB_HOST')
-        DB_PORT = os.getenv('DB_PORT')    
-        
-        # Create SQLAlchemy engine
-        DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'    
-        
-        # Create an SQLAlchemy engine
-        engine = create_engine(DB_STRING)
-        return engine
+def get_engine():   
+    # Load login data from .env file
+    load_dotenv()
     
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+    DB_NAME = os.getenv('DB_NAME')
+    DB_USERNAME = os.getenv('DB_USERNAME')
+    DB_PASSWORD = os.getenv('DB_PASSWORD')
+    DB_HOST = os.getenv('DB_HOST')
+    DB_PORT = os.getenv('DB_PORT')    
+    
+    # Create SQLAlchemy engine
+    DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'    
+    
+    # Create an SQLAlchemy engine
+    engine = create_engine(DB_STRING)
+    return engine
+    
+    
+def st_get_engine():
+    # Read secrets
+    host = st.secrets["postgres"]["host"]
+    port = st.secrets["postgres"]["port"]
+    dbname = st.secrets["postgres"]["dbname"]
+    user = st.secrets["postgres"]["user"]
+    password = st.secrets["postgres"]["password"]
+
+    # Create connection string
+    connection_string = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}"
+
+    # Create SQLAlchemy engine
+    engine = create_engine(connection_string)
+    return engine

@@ -1,51 +1,37 @@
 import pandas as pd
-import numpy as np
-import psycopg2
-from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
-from dotenv import load_dotenv
-import os
+from packages.db_utils import get_engine
 
-# Load login data from .env file
-load_dotenv()
+# Create engine
+engine = get_engine()
 
-DB_NAME = os.getenv('DB_NAME')
-DB_USERNAME = os.getenv('DB_USERNAME')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
+#get data    
+query_string1 = 'select * from "01_bronze".raw_energy_charts_day_ahead_prices_germany'
+df_prices = pd.read_sql(query_string1, engine)
 
-DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+#Change column names
+df_prices.columns = [col.strip().lower().replace(' ', '_') for col in df_prices.columns]
+df_prices.columns = [col.strip().lower().replace('-', '_') for col in df_prices.columns]
 
-# Create SQLAlchemy engine
-engine = create_engine(DB_STRING)
+#timezone conversion
+df_prices['timestamp'] = df_prices['timestamp'].dt.tz_convert("Europe/Berlin") #timezone
 
-# Create a new connection using psycopg2 for non-pandas operations
-conn = psycopg2.connect(
-    database=DB_NAME,
-    user=DB_USERNAME,
-    password=DB_PASSWORD,
-    host=DB_HOST,
-    port=DB_PORT
-)
-try:
-    cursor = conn.cursor()
-    cursor.execute("SELECT version();")
-    record = cursor.fetchone()
-    print("You are connected to -", record, "\n")
+#Add features
+df_prices['time'] = df_prices.timestamp.dt.strftime('%H:%M') #add time column
+df_prices['date'] = df_prices.timestamp.dt.strftime('%Y-%m-%d') #add date column
+
+# Define the desired order of columns
+new_column_order = [
+    'timestamp',
+    'date',
+    'time',
+    'de_lu',
+    'unit'
+]
+
+# Reorder the columns
+df_prices = df_prices[new_column_order]
+
+#Sort Values
+df_prices = df_prices.sort_values(by='timestamp', ascending=False, ignore_index=True)
     
-    query_string1 = 'select * from "01_bronze".raw_energy_charts_day_ahead_prices_germany'
-    df_prices = pd.read_sql(query_string1, engine)
-    
-    df_prices.columns = [col.strip().lower().replace(' ', '_') for col in df_prices.columns]
-    df_prices.columns = [col.strip().lower().replace('-', '_') for col in df_prices.columns]
-    
-    df_prices.to_sql('fact_day_ahead_prices_germany', engine, schema='02_silver', if_exists='replace', index=False)
-    
-except Exception as error:
-    print("Error while connecting to PostgreSQL:", error)
-
-finally:
-    if conn:
-        cursor.close()
-        conn.close()
-        print("PostgreSQL connection is closed")
+df_prices.to_sql('fact_day_ahead_prices_germany', engine, schema='02_silver', if_exists='replace', index=False)
