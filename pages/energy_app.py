@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from packages.db_utils import st_get_engine
-from packages.st_app_utils import get_timeframe
+from packages.st_app_utils import get_timeframe, get_data
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime,timedelta
@@ -28,11 +28,6 @@ query_prices = """ SELECT timestamp, de_lu as price, unit
         FROM "02_silver".fact_day_ahead_prices_germany
     );
 """
-
-@st.cache_data
-def get_data(query):
-    df =pd.read_sql(query, st_get_engine())
-    return df
 
 df_prices = get_data(query_prices)
 

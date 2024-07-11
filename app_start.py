@@ -7,6 +7,8 @@ market_page = st.Page("pages/electricity_market.py", title="Electricity Market",
 weather_page = st.Page("pages/weather.py", title="Weather Data", icon=":material/sunny:")
 calculator_page = st.Page("pages/calculator_app.py", title="Calculator App", icon=":material/calculate:")
 
+st.logo('images/logo.png')
+
 pg = st.navigation(
     {
         "Home": [home_page],

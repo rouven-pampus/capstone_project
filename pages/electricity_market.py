@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from packages.db_utils import st_get_engine
-from packages.st_app_utils import get_timeframe
+from packages.st_app_utils import get_timeframe, get_data
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime,timedelta
@@ -12,7 +12,7 @@ query_market =""" select * from "02_silver".fact_total_power_germany ftpg
     SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '365 days'
     FROM "02_silver".fact_total_power_germany)  """
 
-df_power = pd.read_sql(query_market, st_get_engine())
+df_power = get_data(query_market)
 
 #Do transformations to price dataframe
 df_power["timestamp"] = df_power["timestamp"].dt.tz_convert("Europe/Berlin") #timezone
@@ -108,7 +108,7 @@ timeframe_entries = df_power.timeframe.unique()
 
 timeframe_radio = st.selectbox("Total Production for:", timeframe_entries)
 
-df_sel = df_power.query('timeframe == @timeframe_radio')
+df_sel = df_power.query('timeframe == @timeframe_radio').sort_values(by='timestamp')
 
 fig_prod = create_line_chart(df_sel["timestamp"], df_sel["total_production"],"Total Electricity Production Germany", "Time", "MWh" )
 fig_rens = create_line_chart(df_sel["timestamp"], df_sel["renewable_share_of_generation"],"Share of Renewable Production Germany", "Time", "% Share of total" )
