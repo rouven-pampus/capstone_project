@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from packages.db_utils import st_get_engine
-from packages.streamlit_app import get_timeframe
+from packages.st_app_utils import get_timeframe
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime,timedelta
@@ -19,7 +18,7 @@ st.set_page_config(
     }
 )
 
-################## data extraction ##################
+################## data extraction energy app ##################
 
 #Place for queries
 query_prices = """ SELECT timestamp, de_lu as price, unit
@@ -30,7 +29,13 @@ query_prices = """ SELECT timestamp, de_lu as price, unit
     );
 """
 
-df_prices = pd.read_sql(query_prices, st_get_engine())
+@st.cache_data
+def get_data(query):
+    df =pd.read_sql(query, st_get_engine())
+    return df
+
+df_prices = get_data(query_prices)
+
 
 ################## data transformation ##################
 
