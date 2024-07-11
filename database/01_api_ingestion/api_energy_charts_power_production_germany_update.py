@@ -31,7 +31,7 @@ conn = psycopg2.connect(
 
 #Define window for updated data
 start_date = (pd.to_datetime("today") - timedelta(days=7)).strftime("%Y-%m-%d") #lookback window of 7 days to limit load of retrieved data 
-end_date = (pd.to_datetime("today") - timedelta(days=1)).strftime("%Y-%m-%d") #cut-off date to avoid null values
+end_date = (pd.to_datetime("today") - timedelta(days=0)).strftime("%Y-%m-%d") #cut-off date to avoid null values
 
 country = "de"
 start = start_date
