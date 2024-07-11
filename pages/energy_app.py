@@ -7,8 +7,6 @@ import plotly.graph_objects as go
 from datetime import datetime,timedelta
 
 st.set_page_config(
-    page_title="Get Energized",
-    page_icon=":material/home:",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
@@ -21,22 +19,20 @@ st.set_page_config(
 ################## data extraction energy app ##################
 
 #Place for queries
-query_prices = """ SELECT timestamp, de_lu as price, unit
+query_prices = """ SELECT timestamp, date, time, de_lu as price, unit
     FROM "02_silver".fact_day_ahead_prices_germany
     WHERE date_trunc('day', "timestamp") >= (
         SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '7 days'
         FROM "02_silver".fact_day_ahead_prices_germany
     );
 """
-
+#get data
 df_prices = get_data(query_prices)
 
 ################## data transformation ##################
 
 #Do transformations to price dataframe
 df_prices["timestamp"] = df_prices["timestamp"].dt.tz_convert("Europe/Berlin") #timezone
-df_prices["hour"] = df_prices.timestamp.dt.strftime('%H:%M') #add hour column
-df_prices['date'] = df_prices.timestamp.dt.strftime('%Y-%m-%d') #add date column
 df_prices["timeframe"] = df_prices["timestamp"].apply(get_timeframe)
 
 #get timefram entries
@@ -51,8 +47,8 @@ hour_before = format(F"{(datetime.now() - timedelta(hours=1)).hour}:00")
 today_date = datetime_now.strftime('%Y-%m-%d')
 
 #Add current price metrics
-current_price = df_prices.query("hour == @hour_now and date == @today_date").price.values[0]
-before_price = df_prices.query("hour == @hour_before and date == @today_date").price.values[0]
+current_price = df_prices.query("time == @hour_now and date == @today_date").price.values[0]
+before_price = df_prices.query("time == @hour_before and date == @today_date").price.values[0]
 price_delta = round((current_price - before_price),2)
 
 ################## definition of charts ##################
