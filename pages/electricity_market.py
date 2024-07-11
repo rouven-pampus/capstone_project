@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from packages.db_utils import get_data_from_db_st, get_engine
+from packages.db_utils import st_get_engine
 from packages.streamlit_app import get_timeframe
 import plotly.express as px
 import plotly.graph_objects as go
@@ -12,45 +12,7 @@ query_market =""" select * from "02_silver".fact_total_power_germany ftpg
     SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '365 days'
     FROM "02_silver".fact_total_power_germany)  """
 
-@st.cache_data
-def load_data(query):
-    data = get_data_from_db_st(query)
-    return data
-
-#Load market data
-df_power = load_data(query_market)
-
-# Define the desired order of columns
-new_column_order = [
-    'timestamp',   
-    'hydro_run_of_river',     
-    'hydro_water_reservoir', 
-    'hydro_pumped_storage',     
-    'biomass',
-    'geothermal',     
-    'wind_offshore', 
-    'wind_onshore', 
-    'solar',     
-    'fossil_brown_coal_lignite', 
-    'fossil_hard_coal', 
-    'fossil_oil', 
-    'fossil_gas',
-    'nuclear',
-    'others', 
-    'waste',        
-    'hydro_pumped_storage_consumption', 
-    'load_incl_self_consumption',    
-    'cross_border_electricity_trading',
-    'residual_load',
-    'renewable_share_of_generation', 
-    'renewable_share_of_load'    
-]
-
-# Reorder the columns
-df_power = df_power[new_column_order]
-
-df_power["total_production"] = df_power.iloc[:,1:16].sum(axis=1)
-df_power["renewable_production"] = df_power.iloc[:,1:9].sum(axis=1)
+df_power = pd.read_sql(query_market, st_get_engine())
 
 #Do transformations to price dataframe
 df_power["timestamp"] = df_power["timestamp"].dt.tz_convert("Europe/Berlin") #timezone
