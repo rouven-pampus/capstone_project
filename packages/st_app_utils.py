@@ -1,6 +1,5 @@
 import pandas as pd
 from datetime import datetime, timedelta
-import pytz
 
 def get_timeframe(ts):
     today = pd.to_datetime(datetime.now().date())
