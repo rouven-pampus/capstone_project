@@ -1,14 +1,12 @@
 import streamlit as st
 import pandas as pd
 from packages.db_utils import st_get_engine
-from packages.st_app_utils import get_timeframe
+from packages.st_app_utils import get_timeframe, get_data
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime,timedelta
 
 st.set_page_config(
-    page_title="Ex-stream-ly Cool App",
-    page_icon="🧊",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
@@ -21,28 +19,20 @@ st.set_page_config(
 ################## data extraction energy app ##################
 
 #Place for queries
-query_prices = """ SELECT timestamp, de_lu as price, unit
+query_prices = """ SELECT timestamp, date, time, de_lu as price, unit
     FROM "02_silver".fact_day_ahead_prices_germany
     WHERE date_trunc('day', "timestamp") >= (
         SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '7 days'
         FROM "02_silver".fact_day_ahead_prices_germany
     );
 """
-
-@st.cache_data
-def get_data(query):
-    df =pd.read_sql(query, st_get_engine())
-    return df
-
+#get data
 df_prices = get_data(query_prices)
-
 
 ################## data transformation ##################
 
 #Do transformations to price dataframe
 df_prices["timestamp"] = df_prices["timestamp"].dt.tz_convert("Europe/Berlin") #timezone
-df_prices["hour"] = df_prices.timestamp.dt.strftime('%H:%M') #add hour column
-df_prices['date'] = df_prices.timestamp.dt.strftime('%Y-%m-%d') #add date column
 df_prices["timeframe"] = df_prices["timestamp"].apply(get_timeframe)
 
 #get timefram entries
@@ -57,8 +47,8 @@ hour_before = format(F"{(datetime.now() - timedelta(hours=1)).hour}:00")
 today_date = datetime_now.strftime('%Y-%m-%d')
 
 #Add current price metrics
-current_price = df_prices.query("hour == @hour_now and date == @today_date").price.values[0]
-before_price = df_prices.query("hour == @hour_before and date == @today_date").price.values[0]
+current_price = df_prices.query("time == @hour_now and date == @today_date").price.values[0]
+before_price = df_prices.query("time == @hour_before and date == @today_date").price.values[0]
 price_delta = round((current_price - before_price),2)
 
 ################## definition of charts ##################
@@ -89,7 +79,6 @@ def create_bar_chart(x_data, y_data, title, x_title, y_title):
     )
     ))
     
-   
     # Update layout
     fig.update_layout(
         title=title,
@@ -101,39 +90,32 @@ def create_bar_chart(x_data, y_data, title, x_title, y_title):
 
 ################## Design elements ##################
 
-timeframe_radio = st.sidebar.selectbox("Daily prices for:", timeframe_entries, index=2)
-
-unit_radio = st.sidebar.selectbox("select unit",["€/MWh","ct€/KWh"])
-if unit_radio == "€/MWh":
-    x = 1
-elif unit_radio == "ct€/KWh":
-    x = 10  
-
 #Example text
-st.title('Insights into insights into insights :sunglasses:')
+st.title('Fancy Insights :sunglasses:')
 
-col1, col2, col3 = st.columns(spec=3, gap="large")
+col1, col2, col3  = st.columns ([1,1,1])
 with col1:
-    st.metric("Date", today_date)
+    timeframe_radio = st.selectbox("Daily prices for:", timeframe_entries, index=0,)
+    df_sel = df_prices.query('timeframe == @timeframe_radio')
 with col2:
-    st.metric("Time", time_now)
-
-    
-col1, col2, col3 = st.columns(spec=3, gap="large")
-#with col1 :
-    
-#with col2:
-    #unit_radio = st.selectbox("select unit",["€/MWh","ct€/KWh"])
-    #if unit_radio == "€/MWh":
-    #    x = 1
-    #elif unit_radio == "ct€/KWh":
-    #    x = 10          
+    unit_radio = st.selectbox("Select unit",["€/MWh","ct€/KWh"])
+    if unit_radio == "€/MWh":
+        x = 1
+    elif unit_radio == "ct€/KWh":
+        x = 10
+    # Creating and calling the price bar chart
+    fig = create_bar_chart(df_sel["timestamp"], df_sel["price"]/x, title="Day-ahead-price", x_title="Hour", y_title=unit_radio)
 with col3:
     st.metric(label ="Current price", value = f"{round(current_price/x,2)} {unit_radio}", delta= f"{round(price_delta/x,2)} {unit_radio}", delta_color="inverse")
 
-df_sel = df_prices.query('timeframe == @timeframe_radio')
-
-# Creating and calling the price bar chart
-fig = create_bar_chart(df_sel["timestamp"], df_sel["price"]/x, title="Day-ahead-price", x_title="Hour", y_title=unit_radio)
 
 st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+
+col1, col2, col3 = st.columns([3,1,1])
+with col1:
+    st.write()
+with col2:
+#all sidebar related functions
+    st.metric("Time", time_now)
+with col3:
+    st.metric("Date", today_date)
