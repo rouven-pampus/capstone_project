@@ -32,23 +32,23 @@ df_weather_stations.rename(columns={
 
 # Mapping of states to regions
 state_to_region = {
-    'SH': 'North',
-    'HB': 'North',
-    'NI': 'North',
-    'MV': 'North',
-    'HH': 'North',
-    'HE': 'West',
-    'NW': 'West',
-    'RP': 'West',
-    'SL': 'West',
-    'SN': 'East',
-    'ST': 'East',
-    'BB': 'East',
-    'TH': 'East',
-    'BE': 'East',
-    'BY': 'South',
-    'BW': 'South',
-    'T': 'South'
+    'SH': 'north',
+    'HB': 'north',
+    'NI': 'north',
+    'MV': 'north',
+    'HH': 'north',
+    'HE': 'west',
+    'NW': 'west',
+    'RP': 'west',
+    'SL': 'west',
+    'SN': 'east',
+    'ST': 'east',
+    'BB': 'east',
+    'TH': 'east',
+    'BE': 'east',
+    'BY': 'south',
+    'BW': 'south',
+    'T': 'south'
     }
 df_weather_stations['region'] = df_weather_stations['state'].map(state_to_region) # Create a new column 'region' based on the mapping
 
