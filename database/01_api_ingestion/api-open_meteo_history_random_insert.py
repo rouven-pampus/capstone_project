@@ -1,58 +1,33 @@
 ####################### get packages #######################
 
-import psycopg2
-from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
-from dotenv import load_dotenv
-import os
 import requests_cache
 import pandas as pd
 from retry_requests import retry
-
-# Load login data from .env file
-load_dotenv()
-
-DB_NAME = os.getenv('DB_NAME')
-DB_USERNAME = os.getenv('DB_USERNAME')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
-
-DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-
-# Create SQLAlchemy engine
-engine = create_engine(DB_STRING)
-
-# Create a new connection using psycopg2 for non-pandas operations
-conn = psycopg2.connect(
-    database=DB_NAME,
-    user=DB_USERNAME,
-    password=DB_PASSWORD,
-    host=DB_HOST,
-    port=DB_PORT
-)
-
-try:
-    cursor = conn.cursor()
-    cursor.execute("SELECT version();")
-    record = cursor.fetchone()
-    print("You are connected to -", record, "\n")
+from packages.db_utils import get_engine
+import time
     
-    # Load data from the database using SQLAlchemy engine
-    query_string1 = 'SELECT * FROM "02_silver"."dim_weather_stations"'
-    weather_stations = pd.read_sql(query_string1, engine)    
-    station_id = weather_stations.station_id.to_list()    
-    stations_latitude = weather_stations.latitude.to_list()
-    stations_longitude = weather_stations.longitude.to_list()
+# Load data from the database using SQLAlchemy engine
+query_string1 = 'SELECT * FROM "02_silver"."dim_active_weather_stations"'
+active_stations = pd.read_sql(query_string1, get_engine())
 
-except Exception as error:
-    print("Error while connecting to PostgreSQL:", error)
+query_string2 = 'SELECT DISTINCT station_id FROM "01_bronze".raw_open_meteo_weather_history;'
+used_stations = pd.read_sql(query_string2, get_engine())
+
+used_ids = used_stations.station_id.unique()
+
+# Removing rows where station_id is in the list
+stations_filtered = active_stations[~active_stations['station_id'].isin(used_ids)]     
+
+# Function to sample up to the available number of station IDs in each state
+def sample_stations(group, n=2):
+    return group.sample(min(len(group), n))
+
+# Group by state and sample station_ids from each state
+sampled_stations = stations_filtered.groupby('state').apply(sample_stations).reset_index(drop=True)
     
-finally:
-    if conn:
-        cursor.close()
-        conn.close()
-        print("PostgreSQL connection is closed")
-
+station_id = sampled_stations.station_id.to_list()    
+stations_latitude = sampled_stations.latitude.to_list()
+stations_longitude = sampled_stations.longitude.to_list()
 
 ####################### get weather forecast from api and push it into new table #######################
 
@@ -83,8 +58,8 @@ def fetch_weather_data(station_id, latitude, longitude):
         "longitude": longitude,
         "hourly": weather_variables,
         "timezone": timezone,
-        "start_date": "2024-01-01",
-	    "end_date": "2024-05-31",
+        "start_date": "2018-10-01",
+	    "end_date": "2024-07-10",
     }
     response = retry_session.get(url, params=params)
     response.raise_for_status()
@@ -121,10 +96,14 @@ all_data = []
 print("Fetching data from API...")
 for i in range(len(station_id)):
     station_data = fetch_weather_data(station_id[i], stations_latitude[i], stations_longitude[i])
+    print(f"current import:{station_id[i]}")
+    time.sleep(60)
     all_data.append(station_data)
 
 # Combine all data into a single DataFrame
-final_weather_data = pd.concat(all_data, ignore_index=True)
+final_weather_data = pd.concat(all_data, ignore_index=True).sort_values(by='timestamp', ascending=False)
+
+final_weather_data.dropna(axis=0, inplace=True)
 
 print("Inserting data into database...")
-final_weather_data.to_sql('raw_open_meteo_weather_history', engine, schema='01_bronze', if_exists='fail', index=False)
+final_weather_data.to_sql('raw_open_meteo_weather_history_new', get_engine(), schema='01_bronze', if_exists='replace', index=False)

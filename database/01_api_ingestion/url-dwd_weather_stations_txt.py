@@ -69,7 +69,7 @@ df['Ende'] = pd.to_datetime(df['Ende'], format='%d.%m.%Y', errors='coerce')
 
 # Define data types
 datatypes = {
-    columns[0]: String, 
+    columns[0]: Integer, 
     columns[1]: String, 
     columns[2]: String,
     columns[3]: String,
@@ -88,9 +88,11 @@ if isinstance(df.columns, pd.MultiIndex):
 
 if isinstance(df.index, pd.MultiIndex):
     df.reset_index(inplace=True)
+    
+df.sort_values(by="Stations_ID", ascending=True).reset_index()
 
 # Write the DataFrame to the database
-df.to_sql('raw_dwd_weather_stations_full', engine, schema='01_bronze', if_exists='replace', dtype=datatypes, index=False)
+df.to_sql('raw_dwd_weather_stations_full', engine, schema='01_bronze', if_exists='replace', index=False)
 
 # Close the connection
 conn.close()

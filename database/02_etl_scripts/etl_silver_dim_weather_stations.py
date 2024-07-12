@@ -1,55 +1,19 @@
-import psycopg2
-from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
-from dotenv import load_dotenv
-import os
-import numpy as np
 import pandas as pd
-from packages.db_utils import get_data_from_db, get_engine
+from packages.db_utils import get_engine
     
-#define query to retreive data from database
-query = """
-    SELECT
-        "Stations_ID"::text AS "station_id",
-        "Stationsname"::text AS "station_name",
-        "Breite"::float as "latitude",
-        "Länge"::float as "longitude",
-        "Bundesland"::text as "state"
-    FROM
-        "01_bronze".raw_dwd_weather_stations_full rwsf
-    group BY"Stations_ID", "Stationsname", "Breite", "Länge", "Bundesland"
-    ORDER BY 
-    ("Stations_ID"::numeric) ASC;   
-"""
+#Get all active weather stations data
+query_string1 = 'SELECT * FROM "02_silver"."dim_active_weather_stations"'
+active_stations = pd.read_sql(query_string1,get_engine())
 
-# Load data from the database using SQLAlchemy engine
-df_weather_stations = get_data_from_db(query)
+#Get all used weather stations ids
+query_string2 = 'SELECT DISTINCT station_id FROM "01_bronze".raw_open_meteo_weather_history'
+used_stations = pd.read_sql(query_string2,get_engine())
 
-#Filter to needed weather stations
-station_id_list =["183","662","691","853","1048","1358","5856","1684","1975","2290","2712","3015","3631","3668","3987","4271","4336","4393","4466","4928","5100","5404","5705","5792"]    
-df_weather_stations.query("station_id == @station_id_list", inplace=True)
+#Make unique to be sure
+used_ids = used_stations.station_id.unique()
 
-# Mapping of states to regions
-state_to_region = {
-    'SH': 'North',
-    'HB': 'North',
-    'NI': 'North',
-    'MV': 'North',
-    'HH': 'North',
-    'HE': 'West',
-    'NW': 'West',
-    'RP': 'West',
-    'SL': 'West',
-    'SN': 'East',
-    'ST': 'East',
-    'BB': 'East',
-    'TH': 'East',
-    'BE': 'East',
-    'BY': 'South',
-    'BW': 'South',
-    'T': 'South'
-    }
-df_weather_stations['region'] = df_weather_stations['state'].map(state_to_region) # Create a new column 'region' based on the mapping
+#Filter where station_id is in the list
+stations_filtered = active_stations[active_stations['station_id'].isin(used_ids)]
 
-#retrie engine and write to database
-engine = get_engine()
-df_weather_stations.to_sql('dim_weather_stations', engine, schema='02_silver', if_exists='replace', index=False)
+#Write to database
+stations_filtered.to_sql('dim_weather_stations', get_engine(), schema='02_silver', if_exists='replace', index=False)
