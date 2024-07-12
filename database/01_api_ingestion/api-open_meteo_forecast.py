@@ -1,60 +1,25 @@
 ####################### get packages #######################
 
-import psycopg2
-from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
-from dotenv import load_dotenv
-import os
 import requests_cache
 import pandas as pd
 from retry_requests import retry
-
-####################### get station info from database #######################
-
-# Load login data from .env file
-load_dotenv()
-
-DB_NAME = os.getenv('DB_NAME')
-DB_USERNAME = os.getenv('DB_USERNAME')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
-
-DB_STRING = f'postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-
-# Create SQLAlchemy engine
-engine = create_engine(DB_STRING)
-
-# Create a new connection using psycopg2 for non-pandas operations
-conn = psycopg2.connect(
-    database=DB_NAME,
-    user=DB_USERNAME,
-    password=DB_PASSWORD,
-    host=DB_HOST,
-    port=DB_PORT
-)
-
-try:
-    cursor = conn.cursor()
-    cursor.execute("SELECT version();")
-    record = cursor.fetchone()
-    print("You are connected to -", record, "\n")
+from packages.db_utils import get_engine
     
-    # Load data from the database using SQLAlchemy engine   
-    query_string1 = 'SELECT * FROM "02_silver"."dim_weather_stations"'
-    weather_stations = pd.read_sql(query_string1, engine)    
-    station_id = weather_stations.station_id.to_list()    
-    stations_latitude = weather_stations.latitude.to_list()
-    stations_longitude = weather_stations.longitude.to_list()
+# Load data from the database  
+query_string1 = 'SELECT * FROM "02_silver"."dim_active_weather_stations"' #for coordinates
+active_stations = pd.read_sql(query_string1, get_engine())
 
-except Exception as error:
-    print("Error while connecting to PostgreSQL:", error)
-    
-finally:
-    if conn:
-        cursor.close()
-        conn.close()
-        print("PostgreSQL connection is closed")
+query_string2 = 'SELECT DISTINCT station_id FROM "01_bronze".raw_open_meteo_weather_history;' #for ids of station_ids used in data
+used_stations = pd.read_sql(query_string2, get_engine())
 
+used_ids = used_stations.station_id.unique() #create list for filtering
+
+# Filter for data of used weather stations
+weather_stations = active_stations[active_stations['station_id'].isin(used_ids)]
+      
+station_id = weather_stations.station_id.to_list()    
+stations_latitude = weather_stations.latitude.to_list()
+stations_longitude = weather_stations.longitude.to_list()
 
 ####################### get weather forecast from api and push it into new table #######################
 
@@ -126,10 +91,10 @@ for i in range(len(station_id)):
     all_data.append(station_data)    
     
 # Combine all data into a single DataFrame
-final_weather_data = pd.concat(all_data, ignore_index=True)
+final_weather_data = pd.concat(all_data, ignore_index=True).sort_values(by='timestamp', ascending=False)
 
 #add difference between timestamp of observation and fetched time 
 final_weather_data["forecast_hours"] = ((final_weather_data['timestamp'] - final_weather_data['timestamp_fetched']).dt.total_seconds() / 3600).astype(int)
 
 print("Inserting data into database...")  
-final_weather_data.to_sql('raw_open_meteo_weather_forecast', engine, schema='01_bronze', if_exists='replace', index=False)
+final_weather_data.to_sql('raw_open_meteo_weather_forecast', get_engine(), schema='01_bronze', if_exists='replace', index=False)
