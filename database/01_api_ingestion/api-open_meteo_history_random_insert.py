@@ -19,7 +19,7 @@ used_ids = used_stations.station_id.unique()
 stations_filtered = active_stations[~active_stations['station_id'].isin(used_ids)]     
 
 # Function to sample up to the available number of station IDs in each state
-def sample_stations(group, n=5):
+def sample_stations(group, n=2):
     return group.sample(min(len(group), n))
 
 # Group by state and sample station_ids from each state
@@ -97,7 +97,7 @@ print("Fetching data from API...")
 for i in range(len(station_id)):
     station_data = fetch_weather_data(station_id[i], stations_latitude[i], stations_longitude[i])
     print(f"current import:{station_id[i]}")
-    time.sleep(30)
+    time.sleep(60)
     all_data.append(station_data)
 
 # Combine all data into a single DataFrame
