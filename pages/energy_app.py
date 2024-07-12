@@ -6,15 +6,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime,timedelta
 
-st.set_page_config(
-    layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={
-        'Get Help': 'https://www.extremelycoolapp.com/help',
-        'Report a bug': "https://www.extremelycoolapp.com/bug",
-        'About': "# This is a header. This is an *extremely* cool app!"
-    }
-)
 
 ################## data extraction energy app ##################
 
@@ -107,7 +98,6 @@ with col2:
     fig = create_bar_chart(df_sel["timestamp"], df_sel["price"]/x, title="Day-ahead-price", x_title="Hour", y_title=unit_radio)
 with col3:
     st.metric(label ="Current price", value = f"{round(current_price/x,2)} {unit_radio}", delta= f"{round(price_delta/x,2)} {unit_radio}", delta_color="inverse")
-
 
 st.plotly_chart(fig, theme="streamlit", use_container_width=True)
 
