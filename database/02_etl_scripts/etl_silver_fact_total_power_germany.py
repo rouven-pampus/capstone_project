@@ -19,16 +19,6 @@ df_power.drop('fossil_coal_derived_gas', axis=1, inplace=True)
 df_power['nuclear'] = df_power['nuclear'].fillna(0)
 df_power.dropna(inplace=True)
 
-renewable_columns = [
-    'hydro_run_of_river',     
-    'hydro_water_reservoir', 
-    'hydro_pumped_storage',     
-    'biomass',
-    'geothermal',     
-    'wind_offshore', 
-    'wind_onshore', 
-    'solar']
-
 production_columns = [
     'hydro_run_of_river',     
     'hydro_water_reservoir', 
@@ -44,13 +34,36 @@ production_columns = [
     'fossil_gas',
     'nuclear',
     'others', 
-    'waste']
+    'waste'
+    ]
+
+renewable_columns = [
+    'hydro_run_of_river',     
+    'hydro_water_reservoir', 
+    'hydro_pumped_storage',     
+    'biomass',
+    'geothermal',     
+    'wind_offshore', 
+    'wind_onshore', 
+    'solar'
+    ]
+
+fossil_columns = [
+    'fossil_brown_coal_lignite',
+    'fossil_hard_coal',
+    'fossil_oil',
+    'fossil_gas',
+    'nuclear',
+    'others',
+    'waste'
+    ]
 
 #Add features
 df_power['time'] = df_power.timestamp.dt.strftime('%H:%M') #add time column
 df_power['date'] = df_power.timestamp.dt.strftime('%Y-%m-%d') #add date column
 df_power['total_production'] = df_power[production_columns].sum(axis=1) #sum for total production
 df_power['renewable_production'] = df_power[renewable_columns].sum(axis=1) #sum for renewable production
+df_power['fossil_production'] = df_power[fossil_columns].sum(axis=1) #sum for fossil production
 
 # Define the desired order of columns
 new_column_order = [
@@ -79,7 +92,8 @@ new_column_order = [
     'renewable_share_of_generation', 
     'renewable_share_of_load',
     'total_production',
-    'renewable_production'
+    'renewable_production',
+    'fossil_production'
 ]
 
 # Reorder the columns
