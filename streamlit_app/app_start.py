@@ -2,6 +2,14 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime,timedelta
 
+# add path to be able to load modules
+def add_path():
+    import sys
+    if "../" not in sys.path:
+        sys.path.append("../")
+
+add_path()
+
 st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
