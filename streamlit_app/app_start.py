@@ -1,14 +1,17 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime,timedelta
+import sys
+import os
 
-# add path to be able to load modules
 def add_path():
-    import sys
-    if "../" not in sys.path:
-        sys.path.append("../")
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    if root_dir not in sys.path:
+        sys.path.append(root_dir)
 
 add_path()
+
+print(sys.path)
 
 st.set_page_config(
     layout="wide",
@@ -19,6 +22,7 @@ st.set_page_config(
         'About': "# This is a header. This is an *extremely* cool app!"
     }
 )
+
 
 home_page = st.Page("energy_app.py", title="Energy App", icon=":material/home:", default=True)
 market_page = st.Page("electricity_market.py", title="Electricity Market", icon=":material/bolt:")
