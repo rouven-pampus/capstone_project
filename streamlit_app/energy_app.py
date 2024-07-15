@@ -1,30 +1,33 @@
 import streamlit as st
 import pandas as pd
 from packages.db_utils import st_get_engine
-from packages.st_app_utils import get_timeframe, get_data
-import plotly.express as px
+from packages.st_app_utils import get_timeframe
 import plotly.graph_objects as go
 from datetime import datetime,timedelta
 
 
 ################## data extraction energy app ##################
 
+@st.cache_data
+def load_data(query):
+    engine = st_get_engine()
+    df = pd.read_sql(query, engine)
+    df["timestamp"] = df["timestamp"].dt.tz_convert("Europe/Berlin")  # timezone
+    df["timeframe"] = df["timestamp"].apply(get_timeframe)
+    return df
+
 #Place for queries
-query_prices = """ SELECT timestamp, date, time, de_lu as price, unit
+query_string1 = """ SELECT timestamp, date, time, de_lu as price, unit
     FROM "02_silver".fact_day_ahead_prices_germany
     WHERE date_trunc('day', "timestamp") >= (
         SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '7 days'
         FROM "02_silver".fact_day_ahead_prices_germany
     );
 """
-#get data
-df_prices = get_data(query_prices)
+
+df_prices = load_data(query_string1)
 
 ################## data transformation ##################
-
-#Do transformations to price dataframe
-df_prices["timestamp"] = df_prices["timestamp"].dt.tz_convert("Europe/Berlin") #timezone
-df_prices["timeframe"] = df_prices["timestamp"].apply(get_timeframe)
 
 #get timefram entries
 timeframe_entries = df_prices.timeframe.unique()
@@ -97,15 +100,6 @@ with col2:
     # Creating and calling the price bar chart
     fig = create_bar_chart(df_sel["timestamp"], df_sel["price"]/x, title="Day-ahead-price", x_title="Hour", y_title=unit_radio)
 with col3:
-    st.metric(label ="Current price", value = f"{round(current_price/x,2)} {unit_radio}", delta= f"{round(price_delta/x,2)} {unit_radio}", delta_color="inverse")
+    st.metric(label =f"Price at {hour_now}", value = f"{round(current_price/x,2)} {unit_radio}", delta= f"{round(price_delta/x,2)} {unit_radio}", delta_color="inverse")
 
 st.plotly_chart(fig, theme="streamlit", use_container_width=True)
-
-col1, col2, col3 = st.columns([3,1,1])
-with col1:
-    st.write()
-with col2:
-#all sidebar related functions
-    st.metric("Time", time_now)
-with col3:
-    st.metric("Date", today_date)
