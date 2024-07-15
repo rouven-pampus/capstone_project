@@ -1,23 +1,26 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from packages.db_utils import st_get_engine
 from packages.st_app_utils import get_timeframe, get_data
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-query_market = """select * from "02_silver".fact_total_power_germany ftpg
+@st.cache_data
+def load_data(query):
+    engine = st_get_engine()
+    df = pd.read_sql(query, engine)
+    df["timestamp"] = df["timestamp"].dt.tz_convert("Europe/Berlin")  # timezone
+    df["hour"] = df.timestamp.dt.strftime('%H:%M')  # add hour column
+    df['date'] = df.timestamp.dt.strftime('%Y-%m-%d')  # add date column
+    df["timeframe"] = df["timestamp"].apply(get_timeframe)
+    return df
+
+query_string1 = """select * from "02_silver".fact_total_power_germany ftpg
     WHERE date_trunc('day', "timestamp") >= (
     SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '365 days'
     FROM "02_silver".fact_total_power_germany)"""
 
-df_power = get_data(query_market)
-
-# Do transformations to price dataframe
-df_power["timestamp"] = df_power["timestamp"].dt.tz_convert("Europe/Berlin")  # timezone
-df_power["hour"] = df_power.timestamp.dt.strftime('%H:%M')  # add hour column
-df_power['date'] = df_power.timestamp.dt.strftime('%Y-%m-%d')  # add date column
-df_power["timeframe"] = df_power["timestamp"].apply(get_timeframe)
+df_power = load_data(query_string1)
 
 # Get timeframe entries
 timeframe_entries = df_power.timeframe.unique()
@@ -82,25 +85,45 @@ def create_combined_line_chart(df, metrics, title, x_title, y_title_left, y_titl
         legend=dict(
             orientation="h",
             yanchor="top",
-            y=-0.2,
+            y=-0.3,
             xanchor="center",
             x=0.5
         )
     )
     return fig
 
-# Get timeframe entries
-timeframe_entries = df_power.timeframe.unique()
+st.title('Whats going in the energy market')
 
-timeframe_radio = st.selectbox("Total Production for:", timeframe_entries)
-metrics_multiselect = st.multiselect(
-    "Select Metrics",
-    ["total_production", "renewable_share_of_generation", "renewable_production"],
-    default=["total_production"]
-)
+col1, col2 = st.columns([3,1])
+with col1:
+    # Create multiselection for chart
+    metrics_multiselect = st.multiselect(
+        label="Select Metrics",
+        options=["Total Production","Consumption", "Renewable Production", "Fossil Production", "Renewable Share of Generation"],
+        default="Total Production"
+    )
+    
+    multiselect_options = {
+        "Total Production": "total_production",
+        "Renewable Share of Generation": "renewable_share_of_generation",
+        "Renewable Production": "renewable_production",
+        "Fossil Production": "fossil_production",
+        "Consumption": 'load_incl_self_consumption'
+    }
+    
+    selected_metrics = [multiselect_options[metric] for metric in metrics_multiselect]
 
+with col2:
+    # Create timeframe selection
+    timeframe_entries = df_power.timeframe.unique()
+    timeframe_radio = st.selectbox("Please choose your metrics:", ["today","yesterday"])
+
+
+# Filter dataframe
 df_sel = df_power.query('timeframe == @timeframe_radio').sort_values(by='timestamp')
 
-fig_combined = create_combined_line_chart(df_sel, metrics_multiselect, "Electricity Production Metrics Germany", "Time", "Values (MWh)", "Renewable Share (%)")
+# Create chart
+fig_combined = create_combined_line_chart(df_sel, selected_metrics, "Electricity Production Metrics Germany", "Time", "MWh", "Share (%)")
 
+# Show chart
 st.plotly_chart(fig_combined, theme="streamlit", use_container_width=True)
