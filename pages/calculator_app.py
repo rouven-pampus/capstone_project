@@ -7,11 +7,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
+
+
 # Page title
 st.title("Electricity Savings Calculator")
 
 # Step 1: Question with two possible answers
-option = st.radio("Do you have a fixed or flexible electricity usage plan?", ('Fix', 'Flexible'))
+option = st.radio("Do you currently have a fixed or flexible electricity usage plan?", ('Fix', 'Flexible'))
 
 # Step 2: Show different inputs based on the selected option
 if option == 'Fix':
@@ -79,6 +81,13 @@ konzessionsabgaben_2024 = {
     "Thüringen": 1.35
 }
 
+# Read the CSV file containing the hourly consumption data
+hourly_consumption_data = pd.read_csv('./prepared_consumption2024.csv')
+
+# Extract necessary columns
+hourly_consumption_data = hourly_consumption_data[['hour', 'total', 'normalized']]
+
+
 ########## FUNCTIONS ###########
 def fetch_market_prices():
     query_prices = """ SELECT timestamp, de_lu as price, unit
@@ -118,7 +127,7 @@ def calculate_savings_fix(bundesland, annual_consumption, fix_price, working_pri
     taxes = get_taxes_for_bundesland(bundesland)
     market_prices['price_full'] = (market_prices['price'] / 100 + taxes) * (1 + mehrwertsteuer)
 
-    hourly_consumption = annual_consumption / 8760
+    hourly_consumption_data['hourly_consumption'] = hourly_consumption_data['normalized'] * (annual_consumption / 8760)
 
     def get_flexibility(hour):
         if hour < 8:
@@ -128,18 +137,20 @@ def calculate_savings_fix(bundesland, annual_consumption, fix_price, working_pri
         else:
             return flexibility_20_24 / 100
 
-    market_prices['flexibility'] = market_prices['timestamp'].dt.hour.apply(get_flexibility)
-    market_prices['flexible_cost'] = hourly_consumption * market_prices['flexibility'] * market_prices['price_full'] / 100
-    market_prices['fixed_cost'] = hourly_consumption * (1 - market_prices['flexibility']) * market_prices['price_full'] / 100
-
+    market_prices['hour'] = market_prices['timestamp'].dt.hour
+    market_prices = market_prices.merge(hourly_consumption_data, on='hour', how='left')
+    market_prices['flexibility'] = market_prices['hour'].apply(get_flexibility)
+    market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * market_prices['price_full'] / 100
+    market_prices['fixed_cost'] = market_prices['hourly_consumption'] * (1 - market_prices['flexibility']) * market_prices['price_full'] / 100
+    
     daily_cost = market_prices.groupby('date')[['flexible_cost', 'fixed_cost']].sum()
     potential_cost = daily_cost.sum().sum() + (12 * fix_price)
-    current_cost = hourly_consumption * 8760 * working_price / 100 + (12 * fix_price)
-    daily_cost['current_cost'] = hourly_consumption * 24 * working_price / 100 + (fix_price / 30)  # Daily fixed cost
-
+    current_cost = hourly_consumption_data['hourly_consumption'].sum() * working_price / 100 + (12 * fix_price)
+    daily_cost['current_cost'] = hourly_consumption_data['hourly_consumption'].sum() * working_price / 100 + (fix_price / 30)  # Daily fixed cost
+    
     potential_savings = max(0, current_cost - potential_cost)
     saving_ratio = (potential_savings / current_cost) * 100 if current_cost != 0 else 0
-
+    
     return potential_savings, saving_ratio, market_prices, daily_cost
 
 def calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08, flexibility_08_20, flexibility_20_24, mehrwertsteuer=0.19):
@@ -149,9 +160,9 @@ def calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08
     
     # Adjust market prices
     market_prices['price_full'] = (market_prices['price'] / 100 + taxes) * (1 + mehrwertsteuer)
-    
-    # Calculate hourly consumption
-    hourly_consumption = annual_consumption / 8760
+  
+    # Use normalized values for hourly consumption
+    hourly_consumption_data['hourly_consumption'] = hourly_consumption_data['normalized'] * (annual_consumption / 8760)
 
     # Define flexibility function
     def get_flexibility(hour):
@@ -162,34 +173,23 @@ def calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08
         else:
             return flexibility_20_24 / 100
 
-    # Apply flexibility function to market prices
-    market_prices['flexibility'] = market_prices['timestamp'].dt.hour.apply(get_flexibility)
+    market_prices['hour'] = market_prices['timestamp'].dt.hour
+    market_prices = market_prices.merge(hourly_consumption_data, on='hour', how='left')
+    market_prices['flexibility'] = market_prices['hour'].apply(get_flexibility)
+    market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * market_prices['price_full'] / 100
+    market_prices['fixed_cost'] = market_prices['hourly_consumption'] * (1 - market_prices['flexibility']) * market_prices['price_full'] / 100
     
-    # Calculate flexible and fixed costs
-    market_prices['flexible_cost'] = hourly_consumption * market_prices['flexibility'] * market_prices['price_full'] / 100
-    market_prices['fixed_cost'] = hourly_consumption * (1 - market_prices['flexibility']) * market_prices['price_full'] / 100
-    
-    # Calculate daily costs
     daily_cost = market_prices.groupby('date')[['flexible_cost', 'fixed_cost']].sum()
-    
-    # Calculate potential cost
     potential_cost = daily_cost['flexible_cost'].sum() + daily_cost['fixed_cost'].sum()
-    
-    # Calculate current cost
     avg_market_price = market_prices['price_full'].mean()
-    current_cost = hourly_consumption * 8760 * avg_market_price / 100
+    current_cost = hourly_consumption_data['hourly_consumption'].sum() * avg_market_price / 100
     
-    # Add current_cost to daily_cost for plotting
-    daily_cost['current_cost'] = hourly_consumption * 24 * avg_market_price / 100
+    daily_cost['current_cost'] = hourly_consumption_data['hourly_consumption'].sum() * avg_market_price / 100
     
-    # Calculate potential savings
     potential_savings = max(0, current_cost - potential_cost)
     saving_ratio = (potential_savings / current_cost) * 100 if current_cost != 0 else 0
-
+    
     return potential_savings, saving_ratio, market_prices, daily_cost
-
-
-
 
 
 def plot_savings(daily_cost):
@@ -198,7 +198,8 @@ def plot_savings(daily_cost):
 
     fig = px.line(daily_cost, x='date', y='savings', title='Potential Savings Over Time')
     fig.update_layout(
-        yaxis_title="Savings [ct€]"
+        yaxis_title="Savings [ct€]",
+        xaxis_title=None
     )
     fig.update_traces(
         hovertemplate='Date: %{x}<br>Savings: %{y:.2f} ct'
@@ -208,25 +209,14 @@ def plot_savings(daily_cost):
 
 ###### EXECUTE ######
 if st.button("Calculate Savings"):
-    st.write("Calculating savings...")
-    st.write(f"Selected Bundesland: {bundesland}")
-    st.write(f"Annual Consumption: {annual_consumption} kWh")
-    st.write(f"Flexibility (00:00-08:00): {flexibility_00_08} %")
-    st.write(f"Flexibility (08:00-20:00): {flexibility_08_20} %")
-    st.write(f"Flexibility (20:00-24:00): {flexibility_20_24} %")
-
     if option == 'Fix':
-        st.write(f"Fixed Price: {fix_price} €/month")
-        st.write(f"Working Price: {working_price} cents/kWh")
         potential_savings, saving_ratio, market_prices, daily_cost = calculate_savings_fix(bundesland, annual_consumption, fix_price, working_price, flexibility_00_08, flexibility_08_20, flexibility_20_24)
         st.markdown("<hr style='width:50%;border:1px solid lightgrey;'>", unsafe_allow_html=True)
-        st.write(f"Estimated annual savings: {potential_savings:.2f} Euro")
-        st.write(f"Estimated annual savings: {saving_ratio:.2f} %")
+        st.write(f"Estimated annual savings: {potential_savings:.2f} Euro ({saving_ratio:.2f} %)")
         plot_savings(daily_cost)
 
     elif option == 'Flexible':
         potential_savings, saving_ratio, market_prices, daily_cost = calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08, flexibility_08_20, flexibility_20_24)
         st.markdown("<hr style='width:50%;border:1px solid lightgrey;'>", unsafe_allow_html=True)
-        st.write(f"Estimated annual savings: {potential_savings:.2f} Euro")
-        st.write(f"Estimated annual savings: {saving_ratio:.2f} %")
+        st.write(f"Estimated annual savings: {potential_savings:.2f} Euro ({saving_ratio:.2f} %)")
         plot_savings(daily_cost)
