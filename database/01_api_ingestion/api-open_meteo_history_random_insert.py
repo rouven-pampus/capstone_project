@@ -29,6 +29,8 @@ station_id = sampled_stations.station_id.to_list()
 stations_latitude = sampled_stations.latitude.to_list()
 stations_longitude = sampled_stations.longitude.to_list()
 
+print(station_id, sep=",")
+
 ####################### get weather forecast from api and push it into new table #######################
 
 # Setup the Open-Meteo API client with cache and retry on error
