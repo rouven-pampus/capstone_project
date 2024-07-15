@@ -1,6 +1,15 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime,timedelta
+import sys
+import os
+
+def add_path():
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    if root_dir not in sys.path:
+        sys.path.append(root_dir)
+
+add_path()
 
 st.set_page_config(
     page_title="Energizing your world",
@@ -10,8 +19,7 @@ st.set_page_config(
         'Get Help': 'https://www.extremelycoolapp.com/help',
         'Report a bug': "https://www.extremelycoolapp.com/bug",
         'About': "# This is a header. This is an *extremely* cool app!"
-    },
-    
+    },    
 )
 
 home_page = st.Page("energy_app.py", title="Price Viewer", icon=":material/home:", default=True)
