@@ -3,19 +3,21 @@ import pandas as pd
 from datetime import datetime,timedelta
 
 st.set_page_config(
+    page_title="Energizing your world",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
         'Get Help': 'https://www.extremelycoolapp.com/help',
         'Report a bug': "https://www.extremelycoolapp.com/bug",
         'About': "# This is a header. This is an *extremely* cool app!"
-    }
+    },
+    
 )
 
-home_page = st.Page("energy_app.py", title="Energy App", icon=":material/home:", default=True)
+home_page = st.Page("energy_app.py", title="Price Viewer", icon=":material/home:", default=True)
 market_page = st.Page("electricity_market.py", title="Electricity Market", icon=":material/bolt:")
 weather_page = st.Page("weather.py", title="Weather Data", icon=":material/sunny:")
-calculator_page = st.Page("calculator_app.py", title="Calculator App", icon=":material/calculate:")
+calculator_page = st.Page("calculator_app.py", title="Savings Calculator", icon=":material/calculate:")
 
 st.logo('images/logo.png')
 
