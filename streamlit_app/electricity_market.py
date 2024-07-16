@@ -136,4 +136,4 @@ fig_combined_price = create_combined_line_chart(df_sel, ["value"], "Electricity 
 
 # Show chart
 st.plotly_chart(fig_combined_prod, theme="streamlit", use_container_width=True)
-st.plotly_chart(fig_combined_price, theme="streamlit", use_container_width=True)
+#st.plotly_chart(fig_combined_price, theme="streamlit", use_container_width=True)
