@@ -19,8 +19,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        'Get Help': 'https://www.extremelycoolapp.com/help',
-        'Report a bug': "https://www.extremelycoolapp.com/bug",
+        'Get Help': "https://eloncodereview.com/",
+        'Report a bug': 'https://docs.streamlit.io/',
         'About': """
         # Energy Insights App
         *Get all the information you need and push the green transformation of the energy market forward!*        
