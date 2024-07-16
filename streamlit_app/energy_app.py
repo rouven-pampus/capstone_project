@@ -91,7 +91,7 @@ def create_bar_chart(x_data, y_data, title, x_title, y_title):
 ################## Design elements ##################
 
 #Example text
-st.title('Fancy Insights :sunglasses:')
+st.title('Recent energy prices')
 
 col1, col2, col3  = st.columns ([1,1,1])
 with col1:
