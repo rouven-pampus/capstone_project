@@ -188,7 +188,7 @@ values = np.concatenate((values_24, values_48, values_72, values_c))
 final_predictions['source'] = values
 
 # Add predicted values
-combined = np.concatenate((pred24, pred48[24:49], pred72[48:73]))
+combined = np.concatenate((preds_24, preds_48[24:49], preds_72[48:73]))
 final_predictions['prediction'] = np.concatenate((pred24, pred48, pred72, combined))
 final_predictions.sort_values(by=['timestamp', 'source']).reset_index(drop=True)
 
