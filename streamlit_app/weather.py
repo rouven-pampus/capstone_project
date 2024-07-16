@@ -120,20 +120,17 @@ st.markdown("""
 /* Buttons-Stil anpassen */
 div.stButton > button:first-child {
     border: 1px solid #d4d4d4; /* Standardgraue Umrandung */
-    color: white;
-    background-color: darkgrey;
+    background-color: transparent;
     width: 150px;  /* Festgelegte Breite */
     height: 50px;  /* Festgelegte Höhe */
 }
 div.stButton > button:first-child:hover {
     border: 2px solid #26909b; /* Blaue Umrandung beim Hover */
-    color: white;
-    background-color: darkgrey;
+    background-color: transparent;
 }
 div.stButton > button:first-child:focus {
     border: 2px solid #26909b; /* Blaue Umrandung beim Fokus */
-    color: white;
-    background-color: darkgrey;
+    background-color: transparent;
     box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5);
 }
 
