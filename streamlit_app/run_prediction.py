@@ -189,7 +189,7 @@ final_predictions['source'] = values
 
 # Add predicted values
 combined = np.concatenate((preds_24, preds_48[24:49], preds_72[48:73]))
-final_predictions['prediction'] = np.concatenate((pred24, pred48, pred72, combined))
+final_predictions['prediction'] = np.concatenate((preds_24, preds_48, preds_72, combined))
 final_predictions.sort_values(by=['timestamp', 'source']).reset_index(drop=True)
 
 # Export to DB
