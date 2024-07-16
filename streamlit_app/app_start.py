@@ -30,9 +30,9 @@ st.set_page_config(
         
         Thanks to energy-charts.de, open-meteo.de, dwd.de, and neuefische Hamburg
         
-        Check out our Github Repo: [Link](https://github.com/rouven-pampus/capstone_project/tree/app)
+        Check out our Github Repo: [Link](https://github.com/rouven-pampus/capstone_project)
         """
-    }    
+    }
 )
 
 #Define all pages
@@ -43,7 +43,7 @@ weather_page = st.Page("weather.py", title="Weather Data", icon=":material/sunny
 calculator_page = st.Page("calculator_app.py", title="Savings Calculator", icon=":material/calculate:")
 
 
-st.logo('images/logo.png')
+st.logo('images/logo.png', link="https://github.com/rouven-pampus/capstone_project" )
 
 pg = st.navigation(
     {
