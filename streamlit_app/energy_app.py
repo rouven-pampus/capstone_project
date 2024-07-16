@@ -36,8 +36,8 @@ timeframe_entries = df_prices.timeframe.unique()
 timestamp_now = pd.Timestamp.now()
 datetime_now = timestamp_now.floor('s')
 time_now = timestamp_now.strftime('%H:%M')
-hour_now = timestamp_now.floor('H').strftime('%H:%M')
-hour_before = format(F"{(datetime.now() - timedelta(hours=1)).hour}:00")
+hour_now = pd.Timestamp.now().floor('H').strftime('%H:%M')
+hour_before = (pd.Timestamp.now() - timedelta(hours=1)).floor('H').strftime('%H:%M')
 today_date = datetime_now.strftime('%Y-%m-%d')
 
 #Add current price metrics
