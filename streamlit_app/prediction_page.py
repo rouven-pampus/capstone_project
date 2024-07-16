@@ -99,7 +99,7 @@ def create_combined_chart(df, metrics, title, x_title, y_title):
     return fig
 
 # Streamlit app
-st.title('Whats going on in the energy market')
+st.title('Predicting the insights')
 
 # Create multiselection for chart
 metrics_multiselect = st.multiselect(
@@ -113,7 +113,7 @@ multiselect_options = {
     "Prediction": "comb.",
     "Prediction 24h": "24h",
     "Prediction 48h": "48h",
-    "Prediction 72h": "72h"    
+    "Prediction 72h": "72h"
 }
 
 selected_metrics = [multiselect_options[metric] for metric in metrics_multiselect]
