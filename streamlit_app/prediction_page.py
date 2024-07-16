@@ -104,12 +104,12 @@ st.title('Predicting the insights')
 # Create multiselection for chart
 metrics_multiselect = st.multiselect(
     label="Select Metrics",
-    options=["Price", "Prediction", "Prediction 24h", "Prediction 48h", "Prediction 72h"],
-    default=["Price"]
+    options=["Day-Ahead-Price", "Prediction", "Prediction 24h", "Prediction 48h", "Prediction 72h"],
+    default=["Day-Ahead-Price","Prediction"]
 )
 
 multiselect_options = {
-    "Price": "price",
+    "Day-Ahead-Price": "price",
     "Prediction": "comb.",
     "Prediction 24h": "24h",
     "Prediction 48h": "48h",
@@ -119,7 +119,7 @@ multiselect_options = {
 selected_metrics = [multiselect_options[metric] for metric in metrics_multiselect]
 
 # Create chart
-fig = create_combined_chart(df, selected_metrics, "Day-Ahead-Price", "Time", "Values")
+fig = create_combined_chart(df, selected_metrics, "Day-Ahead-Price", "Time", "€/MWh")
 
 # Show chart
 st.plotly_chart(fig, theme="streamlit", use_container_width=True)
