@@ -121,17 +121,19 @@ st.markdown("""
 div.stButton > button:first-child {
     border: 1px solid #d4d4d4; /* Standardgraue Umrandung */
     color: white;
-    background-color: transparent;
+    background-color: darkgrey;
+    width: 150px;  /* Festgelegte Breite */
+    height: 50px;  /* Festgelegte Höhe */
 }
 div.stButton > button:first-child:hover {
     border: 2px solid #26909b; /* Blaue Umrandung beim Hover */
     color: white;
-    background-color: transparent;
+    background-color: darkgrey;
 }
 div.stButton > button:first-child:focus {
     border: 2px solid #26909b; /* Blaue Umrandung beim Fokus */
     color: white;
-    background-color: transparent;
+    background-color: darkgrey;
     box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5);
 }
 
@@ -139,6 +141,8 @@ div.stButton > button:first-child:focus {
 div[data-baseweb="select"] > div {
     border: 1px solid #d4d4d4 !important; /* Standardgraue Umrandung */
     cursor: default !important; /* Standard-Cursor statt Text-Cursor */
+    margin-top: 60px; /* Abstand nach oben */
+    margin-left: 0; /* Abstand nach links */
 }
 div[data-baseweb="select"] > div:hover {
     border-color: #26909b !important; /* Blaue Umrandung beim Hover */
@@ -149,12 +153,12 @@ div[data-baseweb="select"] > div:focus-within {
     box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5) !important;
 }
 
-/* Aktiver Button-Stil */
-div.stButton > button.active {
-    border: 2px solid #26909b; /* Blaue Umrandung */
-    color: white;
-    background-color: transparent;
-    box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5);
+/* Label-Stil anpassen */
+div[data-testid="stFormLabel"] > label {
+    margin-top: 60px; /* Abstand nach oben */
+    margin-left: 0; /* Abstand nach links */
+    display: block; /* Block-Anzeige für den Abstand */
+    text-align: left; /* Text nach links ausrichten */
 }
 </style>
 """, unsafe_allow_html=True)
@@ -166,29 +170,17 @@ with col1:
     temp_emoji = "🌡️"  
     wind_emoji = "💨"  
     sun_emoji = "☀️"  
-    
-    temp_button = st.button(f'{temp_emoji} Temperature', key='temp_button')
-    wind_button = st.button(f'{wind_emoji} Wind', key='wind_button')
-    sun_button = st.button(f'{sun_emoji} Sunshine', key='sun_button')
-    
-    if temp_button:
-        st.session_state.active_metric = 'temperature'
-    if wind_button:
-        st.session_state.active_metric = 'wind'
-    if sun_button:
-        st.session_state.active_metric = 'sunshine'
-    
-    # Set active class for the clicked button
-    st.markdown(f"""
-    <style>
-    div.stButton > button[data-key="{st.session_state.get('active_metric', 'temperature')}_button"] {{
-        border: 2px solid #26909b; /* Blaue Umrandung */
-        color: white;
-        background-color: transparent;
-        box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5);
-    }}
-    </style>
-    """, unsafe_allow_html=True)
+    # Arrange buttons in a row with spaces in between
+    button_col1, space1, button_col2, space2, button_col3 = st.columns([1, 0.2, 1, 0.2, 1])
+    with button_col1:
+        if st.button(f'{temp_emoji} Temperature'):
+            st.session_state.active_metric = 'temperature'
+    with button_col2:
+        if st.button(f'{wind_emoji} Wind'):
+            st.session_state.active_metric = 'wind'
+    with button_col3:
+        if st.button(f'{sun_emoji} Sunshine'):
+            st.session_state.active_metric = 'sunshine'
 
 with col2:
     # Dropdown for the period selection
@@ -197,8 +189,8 @@ with col2:
         "Last 14 days": datetime.now() - timedelta(days=14),
         "Last 21 days": datetime.now() - timedelta(days=21)
     }
-    selected_option = st.selectbox("Select period:", list(options.keys()))
-    selected_date = pd.Timestamp(options[selected_option], tz='Europe/Berlin')  
+    selected_option = st.selectbox(" ", list(options.keys()))
+    selected_date = pd.Timestamp(options[selected_option], tz='Europe/Berlin')
 
 # Filter the data by selected time period
 df_weather['timestamp'] = pd.to_datetime(df_weather['timestamp'], utc=True)
