@@ -13,9 +13,11 @@ def load_data(query):
     df["hour"] = df.timestamp.dt.strftime('%H:%M')  # add hour column
     df['date'] = df.timestamp.dt.strftime('%Y-%m-%d')  # add date column
     df["timeframe"] = df["timestamp"].apply(get_timeframe)
+    df["wind"] = df[["wind_onshore","wind_offshore"]].sum(axis=1)
+    df["value"] = df["total_production"] * df["price_eur_mwh"]
     return df
 
-query_string1 = """select * from "02_silver".fact_total_power_germany ftpg
+query_string1 = """select * from "03_gold".fact_electricity_market_germany
     WHERE date_trunc('day', "timestamp") >= (
     SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '365 days'
     FROM "02_silver".fact_total_power_germany)"""
@@ -75,43 +77,48 @@ def create_combined_line_chart(df, metrics, title, x_title, y_title_left, y_titl
         xaxis_title=x_title,
         yaxis=dict(
             title=y_title_left,
-            side="left"
+            side="left",
+            range=[0, df[metrics].max().max() * 1.1]  # set range to start at 0 and 10% above max value
         ),
         yaxis2=dict(
             title=y_title_right,
             overlaying='y',
-            side='right'
+            side='right',
+            range=[0, df["renewable_share_of_generation"].max() * 1.1]  # set range to start at 0 and 10% above max value
         ),
         legend=dict(
             orientation="h",
             yanchor="top",
-            y=-0.3,
+            y=-0.2,
             xanchor="center",
             x=0.5
-        )
+        ),
+        height=600  # set the height of the chart in pixels
     )
     return fig
 
-st.title('Whats going in the energy market')
+st.title('Whats going on in the energy market')
 
 col1, col2 = st.columns([3,1])
 with col1:
     # Create multiselection for chart
-    metrics_multiselect = st.multiselect(
+    metrics_multiselect_prod = st.multiselect(
         label="Select Metrics",
-        options=["Total Production","Consumption", "Renewable Production", "Fossil Production", "Renewable Share of Generation"],
-        default="Total Production"
+        options=["Total Production","Consumption", "Renewable Production", "Fossil Production", "Renewable Share of Generation", "Solar", "Wind"],
+        default=["Total Production","Renewable Production"]
     )
     
-    multiselect_options = {
+    multiselect_options_prod = {
         "Total Production": "total_production",
         "Renewable Share of Generation": "renewable_share_of_generation",
         "Renewable Production": "renewable_production",
         "Fossil Production": "fossil_production",
-        "Consumption": 'load_incl_self_consumption'
+        "Consumption": 'load_incl_self_consumption',
+        "Solar": "solar",
+        "Wind": "wind"
     }
     
-    selected_metrics = [multiselect_options[metric] for metric in metrics_multiselect]
+    selected_metrics_prod = [multiselect_options_prod[metric] for metric in metrics_multiselect_prod]
 
 with col2:
     # Create timeframe selection
@@ -123,7 +130,10 @@ with col2:
 df_sel = df_power.query('timeframe == @timeframe_radio').sort_values(by='timestamp')
 
 # Create chart
-fig_combined = create_combined_line_chart(df_sel, selected_metrics, "Electricity Production Metrics Germany", "Time", "MWh", "Share (%)")
+fig_combined_prod = create_combined_line_chart(df_sel, selected_metrics_prod, "Electricity Production Metrics Germany", "Time", "MWh", "Share (%)")
+
+fig_combined_price = create_combined_line_chart(df_sel, ["value"], "Electricity Production Metrics Germany", "Time", "MWh", "Share (%)")
 
 # Show chart
-st.plotly_chart(fig_combined, theme="streamlit", use_container_width=True)
+st.plotly_chart(fig_combined_prod, theme="streamlit", use_container_width=True)
+st.plotly_chart(fig_combined_price, theme="streamlit", use_container_width=True)

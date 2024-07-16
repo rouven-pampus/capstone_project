@@ -139,6 +139,9 @@ combined_df = combined_df[new_column_order]
 
 #Sort by timestamp
 combined_df.sort_values(by='timestamp', ascending=False, ignore_index=True, inplace=True)
+
+#dropping first row due to incomplete data when grouping quarter hours to full hours
+combined_df = combined_df.drop(combined_df.index[0])
     
 ############################ 3. Load to database ############################
 print("Loading new table...")
