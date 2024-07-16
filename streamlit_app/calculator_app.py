@@ -20,6 +20,15 @@ div[role="slider"] {
     background: rgb(38, 144, 155) !important;
     border-color: rgb(38, 144, 155) !important;
 }
+div[role="slider"]:focus {
+    background: rgb(38, 144, 155) !important;
+    border-color: rgb(38, 144, 155) !important;
+}
+div[role="slider"]:hover {
+    background: rgb(38, 144, 155) !important;
+    border-color: rgb(38, 144, 155) !important;
+    box-shadow: 0 0 0 0.3rem rgba(38, 144, 155, 0.25) !important;
+}
 /* Number above the slider */
 div.StyledThumbValue {
     color: rgb(38, 144, 155) !important;
@@ -33,6 +42,7 @@ div[data-testid="stTickBarMax"] {
 div[role="radiogroup"] > label > div.st-bg {
     background: rgb(38, 144, 155) !important;
     border-color: rgb(38, 144, 155) !important;
+    box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.25) !important;
 }
 /* Change color for selection box when open */
 div[data-baseweb="select"] > div:hover,
@@ -54,17 +64,20 @@ button:focus {
 }
 div[data-testid="stNumberInput"] input[type="number"] button[class="step-down"]:hover,
 div[data-testid="stNumberInput"] input[type="number"] button[class="step-up"]:hover {
-    background-color: rgb(38,144,155) !portant;
-    color: rgb(38,144,155) !portant;
+    background-color: rgb(38,144,155) !important;
+    color: rgb(38,144,155) !important;
+    box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.25) !important;
 }
 /* Change border color on hover */
 div[data-testid="stNumberInput"] div:hover {
     border-color: rgb(38, 144, 155); /* Hover border color */
+    box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.25) !important;
 }
 /* Change border color on focus (click) */
 div[data-testid="stNumberInput"] input[type="number"]:focus, 
 div[data-testid="stNumberInput"] div:focus-within {
     border-color: rgb(38,144,155); /* Click border color */
+    box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.25) !important;
 }
 </style>
 """
@@ -79,56 +92,39 @@ hourly_consumption_data['usage'] = hourly_consumption_data['total'] / consumptio
 
 # Page title
 st.title("Electricity Savings Calculator")
+option = st.radio("Do you currently have a fixed or flexible electricity usage plan?", ('Fix', 'Flexible'))
 
-# Step 1: Question with two possible answers
-col1, col2, col3 = st.columns(3)
-
-# Step 3: Select Bundesland
 # User Input for Annual Consumption
-col1, col2, col3 = st.columns(3)
+col1, col2, col3= st.columns([1,0.5,1.5])
 with col1:
-    option = st.radio("Do you currently have a fixed or flexible electricity usage plan?", ('Fix', 'Flexible'))
-
-with col2:
-    bundesland = st.selectbox("Select your State", [
+    
+    if option == 'Fix':
+        st.subheader("Fixed Plan Details")
+        annual_consumption = st.number_input("Enter your annual electricity consumption (kWh)", min_value=0, value=2500)
+        fix_price = st.number_input("Enter your fixed price (€/month)", min_value=0.0)
+        working_price = st.number_input("Enter your working price (cents/kWh)", min_value=0.0)
+        bundesland = st.selectbox("Select your State", [
         "Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen",
         "Hamburg", "Hessen", "Niedersachsen", "Mecklenburg-Vorpommern",
         "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland",
         "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"
     ])
-
-if option == 'Fix':
-    st.subheader("Fixed Plan Details")
-    col1, col2, col3 = st.columns(3)
-    with col1:
+    elif option == 'Flexible':
+        st.subheader("Flexible Plan Details")
         annual_consumption = st.number_input("Enter your annual electricity consumption (kWh)", min_value=0, value=2500)
-    with col2:
-        fix_price = st.number_input("Enter your fixed price (€/month)", min_value=0.0)
-    with col3:
-        working_price = st.number_input("Enter your working price (cents/kWh)", min_value=0.0)
 
-    st.subheader("Flexibility Details")
-    col1, col2, col3 = st.columns(3)
-    with col1:
+with col3:
+    
+    if option == 'Fix':
+        st.subheader("Flexibility Details")
         flexibility_00_08 = st.slider("Flexibility (00:00-08:00)", min_value=0, max_value=100, value=50)
-    with col2:
         flexibility_08_20 = st.slider("Flexibility (08:00-20:00)", min_value=0, max_value=100, value=50)
-    with col3:
         flexibility_20_24 = st.slider("Flexibility (20:00-24:00)", min_value=0, max_value=100, value=50)
 
-elif option == 'Flexible':
-    st.subheader("Flexible Plan Details")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        annual_consumption = st.number_input("Enter your annual electricity consumption (kWh)", min_value=0, value=2500)
-
-    st.subheader("Flexibility Details")
-    col1, col2, col3 = st.columns(3)
-    with col1:
+    elif option == 'Flexible':
+        st.subheader("Flexibility Details")
         flexibility_00_08 = st.slider("Flexibility (00:00-08:00)", min_value=0, max_value=100, value=50)
-    with col2:
         flexibility_08_20 = st.slider("Flexibility (08:00-20:00)", min_value=0, max_value=100, value=50)
-    with col3:
         flexibility_20_24 = st.slider("Flexibility (20:00-24:00)", min_value=0, max_value=100, value=50)
 
 
@@ -310,7 +306,15 @@ def plot_savings(daily_cost, annual_consumption, fix_price=0, working_price=0, h
     fig.update_layout(
         title='Daily Costs: Potential Solution vs. Current Payment Method',
         yaxis_title="Cost [€]",
-        xaxis_title=None
+        xaxis_title=None,
+        legend=dict(
+            x=1,
+            y=0,
+            xanchor='right',
+            yanchor='bottom',
+            bordercolor='black',
+            borderwidth=1
+        )
     )
 
     fig.update_traces(
@@ -340,18 +344,18 @@ if st.button("Calculate Savings"):
             bundesland, annual_consumption, flexibility_00_08, flexibility_08_20, flexibility_20_24)
 
     st.write('___' * 10)
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns([1,4])
     with col1:
+        st.write("")
+        st.write("")
         st.write(f"Current Cost: {current_cost:.2f} €")
-    with col2:
         st.write(f"Potential Cost: {potential_cost:.2f} €")
-    with col3:
         st.write(f"Estimated annual savings: {potential_savings:.2f} Euro ({saving_ratio:.2f} %)")
-
-    if option == 'Fix':
-        plot_savings(daily_cost, annual_consumption, fix_price, working_price)
-    elif option == 'Flexible':
-        # Ensure hourly_current_cost is of appropriate shape
-        hourly_current_cost = hourly_current_cost[:]
-        plot_savings(daily_cost, annual_consumption, hourly_current_cost=hourly_current_cost)
+    with col2:
+        if option == 'Fix':
+            plot_savings(daily_cost, annual_consumption, fix_price, working_price)
+        elif option == 'Flexible':
+            # Ensure hourly_current_cost is of appropriate shape
+            hourly_current_cost = hourly_current_cost[:]
+            plot_savings(daily_cost, annual_consumption, hourly_current_cost=hourly_current_cost)
 
