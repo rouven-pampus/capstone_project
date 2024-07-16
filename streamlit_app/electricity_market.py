@@ -15,7 +15,7 @@ def load_data(query):
     df["timeframe"] = df["timestamp"].apply(get_timeframe)
     return df
 
-query_string1 = """select * from "02_silver".fact_total_power_germany ftpg
+query_string1 = """select * from "03_gold".fact_electricity_market_germany
     WHERE date_trunc('day', "timestamp") >= (
     SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '365 days'
     FROM "02_silver".fact_total_power_germany)"""
