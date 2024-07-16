@@ -63,6 +63,10 @@ weather.columns = [f'{col[0]}_{col[1]}' for col in weather.columns]
 # Reset the index to convert the timestamp from the index back to a column
 weather = weather.reset_index()
 
+# Change timezones
+weather['timestamp'] = weather['timestamp'].dt.tz_convert('Europe/Berlin')
+market['timestamp'] = market['timestamp'].dt.tz_convert('Europe/Berlin')
+
 # Set end date for last known price
 end_date = market['timestamp'].max()
 
@@ -164,20 +168,53 @@ def lstm_pred(X_train, y_train, X_test):
 print('Done. 24 hour prediction ...')
 
 # Make predictions
-preds_24_list = lstm_pred(X_train_24, y_train_24, X_test_24)
+preds_24 = lstm_pred(X_train_24, y_train_24, X_test_24)
 
 print('Done. 48 hour prediction ...')
 
 # 48h dataset
 pred48 = pd.merge(lagged_market_48, weather, on='timestamp', how='left')
 X_train_48, y_train_48, X_test_48 = train_test(pred48)
-preds_48_list = lstm_pred(X_train_48, y_train_48, X_test_48)
+preds_48 = lstm_pred(X_train_48, y_train_48, X_test_48)
 
 print('Done. 72 hour prediction ...')
 
 # 72h dataset
 pred72 = pd.merge(lagged_market_72, weather, on='timestamp', how='left')
 X_train_72, y_train_72, X_test_72 = train_test(pred72)
-preds_72_list = lstm_pred(X_train_72, y_train_72, X_test_72)
+preds_72 = lstm_pred(X_train_72, y_train_72, X_test_72)
 
-print('All done! Predictions are available as preds_24_list, preds_48_list and preds_72_list.')
+print('All done! Exporting to database ...')
+
+# Create final DataFrame
+timestamps = pd.date_range(start=end_date_adj + pd.Timedelta(hours=1), periods=24, freq='h')
+timestamps2 = pd.date_range(start=end_date_adj + pd.Timedelta(hours=1), periods=48, freq='h')
+timestamps3 = pd.date_range(start=end_date_adj + pd.Timedelta(hours=1), periods=72, freq='h')
+timestamps4 = pd.date_range(start=end_date_adj + pd.Timedelta(hours=1), periods=72, freq='h')
+
+start = pd.DataFrame({'timestamp': timestamps})
+start2 = pd.DataFrame({'timestamp': timestamps2})
+start3 = pd.DataFrame({'timestamp': timestamps3})
+start4 = pd.DataFrame({'timestamp': timestamps4})
+final_predictions = pd.concat([start, start2, start3, start4], axis=0)
+
+# Create the repeated sequences
+values_24 = np.repeat('24h', 24)
+values_48 = np.repeat('48h', 48)
+values_72 = np.repeat('72h', 72)
+values_c = np.repeat('comb.', 72)
+
+# Concatenate the sequences
+values = np.concatenate((values_24, values_48, values_72, values_c))
+
+# Add the sequence as a new column in the DataFrame
+final_predictions['source'] = values
+
+# Add predicted values
+combined = np.concatenate((pred24, pred48[24:49], pred72[48:73]))
+final_predictions['prediction'] = np.concatenate((pred24, pred48, pred72, combined))
+final_predictions.sort_values(by=['timestamp', 'source']).reset_index(drop=True)
+# Export to DB
+final_predictions.to_sql('fact_predicted_values', engine, schema='02_silver', if_exists='replace', index=False)
+
+print('Operation complete.')
