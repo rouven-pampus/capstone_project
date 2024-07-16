@@ -1,34 +1,10 @@
 import pandas as pd
 import numpy as np
-import datetime as dt
-from dotenv import load_dotenv
-import os
-from sqlalchemy import create_engine
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional
-import tensorflow as tf
-from scikeras.wrappers import KerasRegressor
-from datetime import datetime
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional, Input
 from dateutil.relativedelta import relativedelta
-
-##### Data #####
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Get database connection parameters from environment variables
-db_name = os.getenv('DB_NAME')
-db_user = os.getenv('DB_USER')
-db_password = os.getenv('DB_PASSWORD')
-db_host = os.getenv('DB_HOST')
-db_port = os.getenv('DB_PORT')
-
-# Create the database URL
-db_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-
-# Create an engine
-engine = create_engine(db_url)
+from packages.db_utils import get_engine
 
 # Define your queries -> set your table name here
 query1 = 'SELECT * FROM "02_silver"."fact_full_weather_region"'
@@ -37,8 +13,8 @@ query2 = 'SELECT * FROM "03_gold"."fact_electricity_market_germany"'
 print('loading data ...')
 
 # Execute the query and load the data into a pandas DataFrame
-weather = pd.read_sql(query1, engine).sort_values(by='timestamp').reset_index(drop=True)
-gold = pd.read_sql(query2, engine).sort_values(by='timestamp').reset_index(drop=True)
+weather = pd.read_sql(query1, get_engine()).sort_values(by='timestamp').reset_index(drop=True)
+gold = pd.read_sql(query2, get_engine()).sort_values(by='timestamp').reset_index(drop=True)
 
 print('Done. Data preparations ...')
 
@@ -151,7 +127,8 @@ def lstm_pred(X_train, y_train, X_test):
 
     # Build the model
     model = Sequential()
-    model.add(Bidirectional(LSTM(150, activation='relu', return_sequences=True), input_shape=(X_train_scaled.shape[1], X_train_scaled.shape[2])))
+    model.add(Input(shape=(X_train_scaled.shape[1], X_train_scaled.shape[2])))
+    model.add(Bidirectional(LSTM(150, activation='relu', return_sequences=True)))
     model.add(LSTM(150, activation='relu', return_sequences=True))
     model.add(LSTM(150, activation='relu', return_sequences=True))
     model.add(LSTM(150, activation='relu'))
@@ -214,7 +191,8 @@ final_predictions['source'] = values
 combined = np.concatenate((pred24, pred48[24:49], pred72[48:73]))
 final_predictions['prediction'] = np.concatenate((pred24, pred48, pred72, combined))
 final_predictions.sort_values(by=['timestamp', 'source']).reset_index(drop=True)
+
 # Export to DB
-final_predictions.to_sql('fact_predicted_values', engine, schema='02_silver', if_exists='replace', index=False)
+final_predictions.to_sql('fact_predicted_values', get_engine(), schema='02_silver', if_exists='replace', index=False)
 
 print('Operation complete.')
