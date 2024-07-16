@@ -164,10 +164,10 @@ preds_72 = lstm_pred(X_train_72, y_train_72, X_test_72)
 print('All done! Exporting to database ...')
 
 # Create final DataFrame
-timestamps = pd.date_range(start=end_date_adj + pd.Timedelta(hours=1), periods=24, freq='h')
-timestamps2 = pd.date_range(start=end_date_adj + pd.Timedelta(hours=1), periods=48, freq='h')
-timestamps3 = pd.date_range(start=end_date_adj + pd.Timedelta(hours=1), periods=72, freq='h')
-timestamps4 = pd.date_range(start=end_date_adj + pd.Timedelta(hours=1), periods=72, freq='h')
+timestamps = pd.date_range(start=end_date + pd.Timedelta(hours=1), periods=24, freq='h')
+timestamps2 = pd.date_range(start=end_date + pd.Timedelta(hours=1), periods=48, freq='h')
+timestamps3 = pd.date_range(start=end_date + pd.Timedelta(hours=1), periods=72, freq='h')
+timestamps4 = pd.date_range(start=end_date + pd.Timedelta(hours=1), periods=72, freq='h')
 
 start = pd.DataFrame({'timestamp': timestamps})
 start2 = pd.DataFrame({'timestamp': timestamps2})
