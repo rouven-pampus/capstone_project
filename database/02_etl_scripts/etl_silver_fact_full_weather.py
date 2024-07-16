@@ -1,14 +1,9 @@
 ####################### get packages #######################
 
 import psycopg2
-from sqlalchemy import create_engine, DateTime, Float, String, Integer, Column
+from sqlalchemy import create_engine
 from dotenv import load_dotenv
 import os
-import requests_cache
-import pandas as pd
-from retry_requests import retry
-from datetime import timedelta
-import numpy as np
 
 # Load login data from .env file
 load_dotenv()
