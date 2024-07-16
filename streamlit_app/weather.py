@@ -148,6 +148,14 @@ div[data-baseweb="select"] > div:focus-within {
     outline: none !important;
     box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5) !important;
 }
+
+/* Aktiver Button-Stil */
+div.stButton > button.active {
+    border: 2px solid #26909b; /* Blaue Umrandung */
+    color: white;
+    background-color: transparent;
+    box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -158,12 +166,29 @@ with col1:
     temp_emoji = "🌡️"  
     wind_emoji = "💨"  
     sun_emoji = "☀️"  
-    if st.button(f'{temp_emoji} Temperature'):
+    
+    temp_button = st.button(f'{temp_emoji} Temperature', key='temp_button')
+    wind_button = st.button(f'{wind_emoji} Wind', key='wind_button')
+    sun_button = st.button(f'{sun_emoji} Sunshine', key='sun_button')
+    
+    if temp_button:
         st.session_state.active_metric = 'temperature'
-    if st.button(f'{wind_emoji} Wind'):
+    if wind_button:
         st.session_state.active_metric = 'wind'
-    if st.button(f'{sun_emoji} Sunshine'):
+    if sun_button:
         st.session_state.active_metric = 'sunshine'
+    
+    # Set active class for the clicked button
+    st.markdown(f"""
+    <style>
+    div.stButton > button[data-key="{st.session_state.get('active_metric', 'temperature')}_button"] {{
+        border: 2px solid #26909b; /* Blaue Umrandung */
+        color: white;
+        background-color: transparent;
+        box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5);
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 with col2:
     # Dropdown for the period selection
