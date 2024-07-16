@@ -9,12 +9,13 @@ from datetime import datetime, timedelta
 def load_data(query):
     engine = st_get_engine()
     df = pd.read_sql(query, engine)
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)  # Ensure timestamp is in correct format
     df["timestamp"] = df["timestamp"].dt.tz_convert("Europe/Berlin")  # timezone
     df["hour"] = df.timestamp.dt.strftime('%H:%M')  # add hour column
     df['date'] = df.timestamp.dt.strftime('%Y-%m-%d')  # add date column
     df["timeframe"] = df["timestamp"].apply(get_timeframe)
-    df["wind"] = df[["wind_onshore","wind_offshore"]].sum(axis=1)
-    df["sunshine"] = df["sunshine_duration"] 
+    df["wind"] = df["wind_speed_10m"]
+    df["sunshine"] = df["sunshine_duration"] / 3600  # Convert to hours per day
     df["temperature"] = df["temperature_2m"] 
     return df
 
@@ -25,45 +26,54 @@ query_string2 = """select * from "03_gold".fact_electricity_market_germany
 
 df_weather = load_data(query_string2)
 
+# Aggregate sunshine data over daily intervals to smooth out night values
+df_weather['timestamp'] = pd.to_datetime(df_weather['timestamp'])
+df_weather.set_index('timestamp', inplace=True)
+daily_sunshine = df_weather['sunshine'].resample('D').sum().reset_index()  # Sum sunshine per day
+df_weather.reset_index(inplace=True)
 
 def create_plot(df, metric):
-    # Set colours for different metrics
-    colors = {
+    # Set colors and axis labels for different metrics
+    metrics_info = {
         'temperature': {
             'line': '#40c088',  
-            'fill': 'rgba(255, 127, 14, 0.0)'  
+            'fill': 'rgba(64, 192, 136, 0.0)',  
+            'yaxis_title': 'Temperature [°C]'
         },
         'wind': {
             'line': '#26909b',  
-            'fill': 'rgba(44, 160, 44, 0.0)'  
+            'fill': 'rgba(38, 144, 155, 0.0)',  
+            'yaxis_title': 'Wind Speed [m/s]'
         },
         'sunshine': {
             'line': '#fac500',  
-            'fill': 'rgba(214, 39, 40, 0.0)'  
+            'fill': 'rgba(250, 197, 0, 0.0)',
+            'yaxis_title': 'Sunshine [h/d]'  # Adjusted label for daily aggregated sunshine
         }
     }
 
-    # Default colours if metric is not defined
-    default_color = {
+    # Default colours and labels if metric is not defined
+    default_info = {
         'line': '#26909b',
-        'fill': 'rgba(38, 144, 155, 0.2)'
+        'fill': 'rgba(38, 144, 155, 0.2)',
+        'yaxis_title': 'Value'
     }
 
-    # Choose the colours based on the metric
-    selected_colors = colors.get(metric, default_color)
+    # Choose the colors and labels based on the metric
+    selected_info = metrics_info.get(metric, default_info)
 
     fig = go.Figure(data=[go.Scatter(
         x=df['timestamp'],
         y=df[metric],
         mode='lines',
-        line=dict(color=selected_colors['line'], width=3),
+        line=dict(color=selected_info['line'], width=3),
         fill='tozeroy',
-        fillcolor=selected_colors['fill']
+        fillcolor=selected_info['fill']
     )])
     fig.update_layout(
         title=f"{metric.capitalize()} over time",
-        xaxis_title='Time',
-        yaxis_title=metric,
+        xaxis_title='',
+        yaxis_title=selected_info['yaxis_title'],  # Dynamic y-axis title based on the metric
         height=400,
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -171,6 +181,13 @@ df_weather = df_weather[df_weather['timestamp'] >= selected_date]
 
 # Display the graph based on the current selection
 selected_metric = st.session_state.get('active_metric', 'temperature')
+if selected_metric == 'sunshine':
+    daily_sunshine = df_weather[df_weather['timestamp'] >= selected_date]
+    daily_sunshine = daily_sunshine.set_index('timestamp')['sunshine'].resample('D').sum().reset_index()
+    df_weather = daily_sunshine  # Use daily aggregated data for sunshine
+    selected_metric = 'sunshine'  # Ensure the metric name matches the aggregated data
+
+# Display the graph based on the current selection
 st.plotly_chart(create_plot(df_weather, selected_metric), use_container_width=True)
 
 
