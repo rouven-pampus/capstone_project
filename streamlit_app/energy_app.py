@@ -30,7 +30,13 @@ df_prices = load_data(query_string1)
 ################## data transformation ##################
 
 #get timefram entries
-timeframe_entries = df_prices.timeframe.unique()
+timeframe_entries = df_prices.timeframe.unique().tolist()
+
+# Ensure "today" is in the list
+if "today" in timeframe_entries:
+    today_index = timeframe_entries.index("today")
+else:
+    today_index = 0  # Fallback index if "today" is not in the list
 
 #Add current time metrics
 timestamp_now = pd.Timestamp.now()
@@ -85,11 +91,11 @@ def create_bar_chart(x_data, y_data, title, x_title, y_title):
 ################## Design elements ##################
 
 #Example text
-st.title('Fancy Insights :sunglasses:')
+st.title('Recent energy prices')
 
 col1, col2, col3  = st.columns ([1,1,1])
 with col1:
-    timeframe_radio = st.selectbox("Daily prices for:", timeframe_entries, index=0,)
+    timeframe_radio = st.selectbox("Daily prices for:", timeframe_entries, index=today_index)
     df_sel = df_prices.query('timeframe == @timeframe_radio')
 with col2:
     unit_radio = st.selectbox("Select unit",["€/MWh","ct€/KWh"])
