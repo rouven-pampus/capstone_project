@@ -2,12 +2,16 @@
 import streamlit as st
 import pandas as pd
 from packages.db_utils import st_get_engine
-from packages.st_app_utils import get_timeframe
+from packages.st_app_utils import get_timeframe, get_data
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-
+# Load consumption data
+query_consumption = """select * from "01_bronze".raw_consumption_pattern"""
+hourly_consumption_data = get_data(query_consumption)
+consumption_sum = hourly_consumption_data['total'].sum()
+hourly_consumption_data['usage'] = hourly_consumption_data['total'] / consumption_sum
 
 # Page title
 st.title("Electricity Savings Calculator")
@@ -32,7 +36,6 @@ elif option == 'Flexible':
     flexibility_00_08 = st.slider("Flexibility (00:00-08:00)", min_value=0, max_value=100, value=50)
     flexibility_08_20 = st.slider("Flexibility (08:00-20:00)", min_value=0, max_value=100, value=50)
     flexibility_20_24 = st.slider("Flexibility (20:00-24:00)", min_value=0, max_value=100, value=50)
-
 
 # Step 3: Select Bundesland
 bundesland = st.selectbox("Select your State", [
@@ -81,13 +84,6 @@ konzessionsabgaben_2024 = {
     "Thüringen": 1.35
 }
 
-# Read the CSV file containing the hourly consumption data
-hourly_consumption_data = pd.read_csv('./prepared_consumption2024.csv')
-
-# Extract necessary columns
-hourly_consumption_data = hourly_consumption_data[['hour', 'total', 'normalized']]
-
-
 ########## FUNCTIONS ###########
 def fetch_market_prices():
     query_prices = """ SELECT timestamp, de_lu as price, unit
@@ -105,9 +101,8 @@ def fetch_market_prices():
 
     df_prices = get_data(query_prices)
     df_prices["timestamp"] = df_prices["timestamp"].dt.tz_convert("Europe/Berlin")
-    df_prices["hour"] = df_prices.timestamp.dt.strftime('%H:%M')
-    df_prices['date'] = df_prices.timestamp.dt.strftime('%Y-%m-%d')
-    df_prices["timeframe"] = df_prices["timestamp"].apply(get_timeframe)
+    df_prices["hour"] = df_prices["timestamp"].dt.hour
+    df_prices['date'] = df_prices["timestamp"].dt.strftime('%Y-%m-%d')
     return df_prices
 
 def get_taxes_for_bundesland(bundesland):
@@ -122,78 +117,88 @@ def get_taxes_for_bundesland(bundesland):
     taxes = netzentgelt + eeg_umlage + kwkg_umlage + strom_nev_umlage + offshore_umlage + ablav_umlage + stromsteuer + konzessions_abgabe
     return taxes
 
+def get_flexibility(hour):
+        if hour < 8:
+            return flexibility_00_08 / 100
+        elif hour < 20:
+            return flexibility_08_20 / 100
+        else:
+            return flexibility_20_24 / 100
+        
 def calculate_savings_fix(bundesland, annual_consumption, fix_price, working_price, flexibility_00_08, flexibility_08_20, flexibility_20_24, mehrwertsteuer=0.19):
     market_prices = fetch_market_prices()
     taxes = get_taxes_for_bundesland(bundesland)
-    market_prices['price_full'] = (market_prices['price'] / 100 + taxes) * (1 + mehrwertsteuer)
-
-    hourly_consumption_data['hourly_consumption'] = hourly_consumption_data['normalized'] * (annual_consumption / 8760)
-
-    def get_flexibility(hour):
-        if hour < 8:
-            return flexibility_00_08 / 100
-        elif hour < 20:
-            return flexibility_08_20 / 100
-        else:
-            return flexibility_20_24 / 100
-
+    market_prices['price_full'] = ((market_prices['price'] / 100 + taxes) * (1 + mehrwertsteuer))/100
+    
+    # Calculate hourly consumption based on annual consumption
+    hourly_consumption_data['hourly_consumption'] = hourly_consumption_data['usage'] * (annual_consumption / 365)
+    
     market_prices['hour'] = market_prices['timestamp'].dt.hour
     market_prices = market_prices.merge(hourly_consumption_data, on='hour', how='left')
     market_prices['flexibility'] = market_prices['hour'].apply(get_flexibility)
-    market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * market_prices['price_full'] / 100
-    market_prices['fixed_cost'] = market_prices['hourly_consumption'] * (1 - market_prices['flexibility']) * market_prices['price_full'] / 100
+
+    # Calculate costs
+    market_prices['fixed_cost'] = market_prices['hourly_consumption'] * (1 - market_prices['flexibility']) * market_prices['price_full']
+
+    # Identify minimum prices for each timeframe and shift flexible consumption
+    # change made here
+    min_prices = market_prices.groupby(market_prices['date', 'hour'].apply(get_flexibility))['price_full'].min().reset_index()
+    min_prices.columns = ['flexibility', 'min_price']
+    market_prices = market_prices.merge(min_prices, on='flexibility', how='left') # merge pro tag und periode
+    market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * market_prices['min_price']
     
     daily_cost = market_prices.groupby('date')[['flexible_cost', 'fixed_cost']].sum()
-    potential_cost = daily_cost.sum().sum() + (12 * fix_price)
-    current_cost = hourly_consumption_data['hourly_consumption'].sum() * working_price / 100 + (12 * fix_price)
-    daily_cost['current_cost'] = hourly_consumption_data['hourly_consumption'].sum() * working_price / 100 + (fix_price / 30)  # Daily fixed cost
+    annual_potential_cost = daily_cost[['flexible_cost', 'fixed_cost']].sum().sum()
+    potential_cost = annual_potential_cost
+
+
+    annual_current_cost = annual_consumption * working_price / 100
+    annual_fixed_price = 12 * fix_price
+    current_cost = annual_current_cost + annual_fixed_price
+    
     
     potential_savings = max(0, current_cost - potential_cost)
     saving_ratio = (potential_savings / current_cost) * 100 if current_cost != 0 else 0
     
-    return potential_savings, saving_ratio, market_prices, daily_cost
+    return potential_savings, saving_ratio, market_prices, daily_cost, current_cost, potential_cost
 
 def calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08, flexibility_08_20, flexibility_20_24, mehrwertsteuer=0.19):
-    # Fetch market prices and taxes
     market_prices = fetch_market_prices()
     taxes = get_taxes_for_bundesland(bundesland)
-    
-    # Adjust market prices
     market_prices['price_full'] = (market_prices['price'] / 100 + taxes) * (1 + mehrwertsteuer)
-  
-    # Use normalized values for hourly consumption
-    hourly_consumption_data['hourly_consumption'] = hourly_consumption_data['normalized'] * (annual_consumption / 8760)
-
-    # Define flexibility function
-    def get_flexibility(hour):
-        if hour < 8:
-            return flexibility_00_08 / 100
-        elif hour < 20:
-            return flexibility_08_20 / 100
-        else:
-            return flexibility_20_24 / 100
+    
+    # Calculate hourly consumption based on annual consumption
+    hourly_consumption_data['hourly_consumption'] = hourly_consumption_data['usage'] * (annual_consumption / 8760)
 
     market_prices['hour'] = market_prices['timestamp'].dt.hour
     market_prices = market_prices.merge(hourly_consumption_data, on='hour', how='left')
     market_prices['flexibility'] = market_prices['hour'].apply(get_flexibility)
-    market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * market_prices['price_full'] / 100
-    market_prices['fixed_cost'] = market_prices['hourly_consumption'] * (1 - market_prices['flexibility']) * market_prices['price_full'] / 100
+
+    # Calculate costs
+    market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * (market_prices['price_full'] / 100)
+    market_prices['fixed_cost'] = market_prices['hourly_consumption'] * (1 - market_prices['flexibility']) * (market_prices['price_full'] / 100)
+
+    # Identify minimum prices for each timeframe and shift flexible consumption
+    min_prices = market_prices.groupby(market_prices['hour'].apply(get_flexibility))['price_full'].min().reset_index()
+    min_prices.columns = ['flexibility', 'min_price']
+    market_prices = market_prices.merge(min_prices, on='flexibility', how='left')
+    market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * (market_prices['min_price'] / 100)
     
     daily_cost = market_prices.groupby('date')[['flexible_cost', 'fixed_cost']].sum()
-    potential_cost = daily_cost['flexible_cost'].sum() + daily_cost['fixed_cost'].sum()
+    annual_potential_cost = daily_cost[['flexible_cost', 'fixed_cost']].sum().sum()
     avg_market_price = market_prices['price_full'].mean()
-    current_cost = hourly_consumption_data['hourly_consumption'].sum() * avg_market_price / 100
+    annual_current_cost = hourly_consumption_data['hourly_consumption'].sum() * (avg_market_price / 100)
     
-    daily_cost['current_cost'] = hourly_consumption_data['hourly_consumption'].sum() * avg_market_price / 100
+    potential_cost = annual_potential_cost
+    current_cost = annual_current_cost
     
     potential_savings = max(0, current_cost - potential_cost)
     saving_ratio = (potential_savings / current_cost) * 100 if current_cost != 0 else 0
     
-    return potential_savings, saving_ratio, market_prices, daily_cost
+    return potential_savings, saving_ratio, market_prices, daily_cost, current_cost, potential_cost
 
-
-def plot_savings(daily_cost):
-    daily_cost['savings'] = daily_cost['current_cost'] - (daily_cost['flexible_cost'] + daily_cost['fixed_cost'])
+def plot_savings(daily_cost, current_cost):
+    daily_cost['savings'] = current_cost - (daily_cost['flexible_cost'] + daily_cost['fixed_cost'])
     daily_cost.reset_index(inplace=True)  # Ensure the date column is accessible
 
     fig = px.line(daily_cost, x='date', y='savings', title='Potential Savings Over Time')
@@ -210,13 +215,23 @@ def plot_savings(daily_cost):
 ###### EXECUTE ######
 if st.button("Calculate Savings"):
     if option == 'Fix':
-        potential_savings, saving_ratio, market_prices, daily_cost = calculate_savings_fix(bundesland, annual_consumption, fix_price, working_price, flexibility_00_08, flexibility_08_20, flexibility_20_24)
+        potential_savings, saving_ratio, market_prices, daily_cost, current_cost, potential_cost = calculate_savings_fix(bundesland, annual_consumption, fix_price, working_price, flexibility_00_08, flexibility_08_20, flexibility_20_24)
         st.markdown("<hr style='width:50%;border:1px solid lightgrey;'>", unsafe_allow_html=True)
+        st.write("Market Prices:", market_prices.head())
+        st.write("Hourly Consumption Data:", hourly_consumption_data.head())
+        st.write("Daily Cost:", daily_cost.head())
+        st.write("Current Cost:", current_cost)
+        st.write("Potential Cost:", potential_cost)
         st.write(f"Estimated annual savings: {potential_savings:.2f} Euro ({saving_ratio:.2f} %)")
-        plot_savings(daily_cost)
+        plot_savings(daily_cost, current_cost)
 
     elif option == 'Flexible':
-        potential_savings, saving_ratio, market_prices, daily_cost = calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08, flexibility_08_20, flexibility_20_24)
+        potential_savings, saving_ratio, market_prices, daily_cost, current_cost, potential_cost = calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08, flexibility_08_20, flexibility_20_24)
         st.markdown("<hr style='width:50%;border:1px solid lightgrey;'>", unsafe_allow_html=True)
+        st.write("Market Prices:", market_prices.head())
+        st.write("Hourly Consumption Data:", hourly_consumption_data.head())
+        st.write("Daily Cost:", daily_cost.head())
+        st.write("Current Cost:", current_cost)
+        st.write("Potential Cost:", potential_cost)
         st.write(f"Estimated annual savings: {potential_savings:.2f} Euro ({saving_ratio:.2f} %)")
-        plot_savings(daily_cost)
+        plot_savings(daily_cost, current_cost)
