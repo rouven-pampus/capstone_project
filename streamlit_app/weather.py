@@ -150,7 +150,6 @@ div[data-baseweb="select"] > div:focus-within {
     box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5) !important;
 }
             
-
 /* Label-Stil anpassen */
 div[data-testid="stFormLabel"] > label {
     margin-top: 60px; /* Abstand nach oben */
