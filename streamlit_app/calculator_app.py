@@ -191,26 +191,33 @@ def calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08
     hour_col = 'hour'
     merged_data = pd.merge(market_prices, hourly_consumption_data, on=['day_of_year', hour_col], how='left')
     merged_data['current_cost'] = merged_data['hourly_consumption'] * merged_data['price_full']
-    daily_current_cost = merged_data.groupby(date_col)['current_cost'].sum().reset_index(drop=False)
-    hourly_current_cost = daily_current_cost['current_cost'].values # hourly_current_cost is in fact daily.
-
+    
     # Get flexibility
     market_prices = market_prices.merge(hourly_consumption_data, on=['day_of_year', 'hour'], how='left')
     market_prices['flexibility'] = market_prices['hour'].apply(get_flexibility)
     market_prices['flexibility_group'] = market_prices['hour'].apply(get_flexibility_group)
 
+    # current cost
+    daily_current_cost = merged_data.groupby(date_col)['current_cost'].sum().reset_index(drop=False)
+    hourly_current_cost = daily_current_cost['current_cost'].values # hourly_current_cost is in fact daily.
+    max_prices = market_prices.groupby(['date', 'flexibility_group']).apply(lambda x: x.loc[x['price_full'].idxmax()]).reset_index(drop=True)
+    max_prices = max_prices[['date', 'flexibility_group', 'price_full']].rename(columns={'price_full': 'max_price'})
+
     # Calculate flexible and fix costs
     min_prices = market_prices.groupby(['date', 'flexibility_group']).apply(lambda x: x.loc[x['price_full'].idxmin()]).reset_index(drop=True)
     min_prices = min_prices[['date', 'flexibility_group', 'price_full']].rename(columns={'price_full': 'min_price'})
     market_prices = market_prices.merge(min_prices, on=['date', 'flexibility_group'], how='left')
+    market_prices = market_prices.merge(max_prices, on=['date', 'flexibility_group'], how='left')
+
     market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * (market_prices['min_price'])
     market_prices['fixed_cost'] = market_prices['hourly_consumption'] * (1 - market_prices['flexibility']) * (market_prices['price_full'])
-    
+    market_prices['current_cost'] = market_prices['hourly_consumption'] * (market_prices['max_price'])
+
     # Calculate final costs
-    daily_cost = market_prices.groupby('date')[['flexible_cost', 'fixed_cost']].sum().reset_index(drop=False)
+    daily_cost = market_prices.groupby('date')[['flexible_cost', 'fixed_cost', 'current_cost']].sum().reset_index(drop=False)
     annual_potential_cost = daily_cost[['flexible_cost', 'fixed_cost']].sum().sum()
     potential_cost = annual_potential_cost
-    current_cost = daily_current_cost['current_cost'].sum()
+    current_cost = daily_cost['current_cost'].sum()
 
     # Calculate savings
     potential_savings = max(0, current_cost - potential_cost)
@@ -219,13 +226,13 @@ def calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08
     return potential_savings, saving_ratio, market_prices, daily_cost, current_cost, potential_cost, hourly_current_cost
 
 def plot_savings(daily_cost, annual_consumption, fix_price=0, working_price=0, hourly_current_cost=None, y_min=None, y_max=None):
-    daily_usage = annual_consumption / 365
+    daily_usage = hourly_consumption_data.groupby('day_of_year').sum()['usage']
     daily_fixed_cost = (12 * fix_price) / 365 if fix_price else 0
 
     if hourly_current_cost is not None:
         daily_cost['current_cost'] = hourly_current_cost
     else:
-        daily_cost['current_cost'] = daily_usage * (working_price / 100) + daily_fixed_cost
+        daily_cost['current_cost'] = daily_usage * annual_consumption * (working_price / 100) + daily_fixed_cost
 
     daily_cost['potential_cost'] = daily_cost['flexible_cost'] + daily_cost['fixed_cost']
     daily_cost['savings'] = daily_cost['current_cost'] - daily_cost['potential_cost']
