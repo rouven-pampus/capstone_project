@@ -132,14 +132,18 @@ def create_bar_chart(x_data, y_data, title, x_title, y_title):
 
 #Example text
 st.title('Welcome home 	:house_with_garden:')
-
-
-
-col1, col2  = st.columns ([1,1], vertical_alignment="center")
+    
+col1, col2, col3  = st.columns ([1,1,2], vertical_alignment="center")
 with col1:
-    st.write(f"### {time_now}")
+    st.write(f"### Current time {time_now}")
 with col2:
+    timeframe_radio = st.selectbox("Daily prices for:", timeframe_entries, index=today_index)
+with col3:
     st.write()
+    
+st.divider()
+
+st.write(f"__Values at {hour_now}__")
 
 col1, col2,col3,col4 = st.columns([1,1,1,1])
 with col1:
@@ -147,16 +151,12 @@ with col1:
 with col2:
     st.metric(label="Temperature", value=f"{current_temp} C°", delta=f"{delta_temp} C°", delta_color="off")
 with col3:
-    st.metric(label="Sunshine duration", value=f"{current_sun} min", delta=f"{delta_sun} min", delta_color="off")
+    st.metric(label="Sunshine duration", value=f"{current_sun} min", delta=f"{delta_sun} min", delta_color="off")    
 with col4:
     st.metric(label="Wind speed", value=f"{current_wind} km/h", delta=f"{delta_wind} km/h", delta_color="off")
     
-
-timeframe_radio = st.selectbox("Daily prices for:", timeframe_entries, index=today_index)
 df_sel = df_prices.query('timeframe == @timeframe_radio')
 
-
-    
 # Creating and calling the price bar chart
 fig = create_bar_chart(df_sel["timestamp"], df_sel["price"], title="Day-ahead-price", x_title="Hour", y_title="€/MWh")
 st.plotly_chart(fig, theme="streamlit", use_container_width=True)
