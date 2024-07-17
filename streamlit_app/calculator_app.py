@@ -230,7 +230,7 @@ def plot_savings(daily_cost, annual_consumption, fix_price=0, working_price=0, h
     daily_fixed_cost = (12 * fix_price) / 365 if fix_price else 0
 
     if hourly_current_cost is not None:
-        daily_cost['current_cost'] = hourly_current_cost
+        daily_cost['current_cost'] = daily_cost['current_cost']
     else:
         daily_cost['current_cost'] = daily_usage * annual_consumption * (working_price / 100) + daily_fixed_cost
 
