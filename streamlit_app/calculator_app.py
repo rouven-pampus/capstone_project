@@ -18,7 +18,7 @@ query_consumption = """SELECT * FROM "01_bronze".raw_consumption_pattern"""
 hourly_consumption_data = get_data(query_consumption)
 
 # Page title
-st.title("Electricity Savings Calculator")
+st.title("Electricity Savings Calculator :money_with_wings:")
 option = st.radio("Do you currently have a fixed or flexible electricity usage plan?", ('Fix', 'Flexible'))
 
 # User Input for Annual Consumption

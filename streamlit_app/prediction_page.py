@@ -103,7 +103,7 @@ def create_combined_chart(df, metrics, title, x_title, y_title):
     return fig
 
 # Streamlit app
-st.title('Predicting the insights')
+st.title('Predicting the insights :bulb:')
 
 # Create multiselection for chart
 metrics_multiselect = st.multiselect(

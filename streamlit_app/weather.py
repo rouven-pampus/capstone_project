@@ -108,7 +108,7 @@ def create_plot(df, metric):
 
 
 # Title of the Streamlit app
-st.title('Overview of weather data')
+st.title('Overview of weather data :mostly_sunny:')
 
 # Add custom CSS for button colours
 st.markdown("""
