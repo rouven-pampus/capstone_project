@@ -58,19 +58,3 @@ def get_engine():
     # Create an SQLAlchemy engine
     engine = create_engine(DB_STRING)
     return engine
-    
-    
-def st_get_engine():
-    # Read secrets
-    host = st.secrets["postgres"]["host"]
-    port = st.secrets["postgres"]["port"]
-    dbname = st.secrets["postgres"]["dbname"]
-    user = st.secrets["postgres"]["user"]
-    password = st.secrets["postgres"]["password"]
-
-    # Create connection string
-    connection_string = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}"
-
-    # Create SQLAlchemy engine
-    engine = create_engine(connection_string)
-    return engine

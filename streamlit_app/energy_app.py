@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-from packages.db_utils import st_get_engine
-from packages.st_app_utils import get_timeframe
+from packages.st_app_utils import get_timeframe, st_get_engine
 import plotly.graph_objects as go
 from datetime import datetime,timedelta
 
@@ -10,8 +9,7 @@ from datetime import datetime,timedelta
 
 @st.cache_data
 def load_data(query):
-    engine = st_get_engine()
-    df = pd.read_sql(query, engine)
+    df = pd.read_sql(query, st_get_engine())
     df["timestamp"] = df["timestamp"].dt.tz_convert("Europe/Berlin")  # timezone
     df["timeframe"] = df["timestamp"].apply(get_timeframe)
     return df

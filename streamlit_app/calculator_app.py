@@ -1,16 +1,17 @@
 # Importing Modules
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import numpy as np
-from packages.db_utils import st_get_engine
-from packages.st_app_utils import get_timeframe, get_data
+from packages.st_app_utils import st_get_engine
 from packages.calculator_css import custom_css
 
 # set up style.
 st.markdown(custom_css, unsafe_allow_html=True)
+
+@st.cache_data
+def get_data(query):
+    df = pd.read_sql(query, st_get_engine())
+    return df
 
 # Load consumption data
 query_consumption = """SELECT * FROM "01_bronze".raw_consumption_pattern"""
@@ -106,11 +107,8 @@ def fetch_market_prices():
         );
     """
 
-    @st.cache_data
-    def get_data(query):
-        df = pd.read_sql(query, st_get_engine())
-        return df
-
+    df_prices = get_data(query_prices)
+    
     df_prices = get_data(query_prices)
     df_prices["timestamp"] = df_prices["timestamp"].dt.tz_convert("Europe/Berlin")
     df_prices["hour"] = df_prices["timestamp"].dt.hour
