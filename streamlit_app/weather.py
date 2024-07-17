@@ -121,7 +121,6 @@ div.stButton > button:first-child {
     background-color: transparent;
     width: 150px;  /* Festgelegte Breite */
     height: 50px;  /* Festgelegte Höhe */
-    color: black;  /* Standard Textfarbe */
 }
 div.stButton > button:first-child:hover {
     border: 2px solid #26909b; /* Blaue Umrandung beim Hover */
