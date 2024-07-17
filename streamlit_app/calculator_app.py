@@ -149,7 +149,7 @@ def get_flexibility_group(hour):
 def calculate_savings_fix(bundesland, annual_consumption, fix_price, working_price, flexibility_00_08, flexibility_08_20, flexibility_20_24, mehrwertsteuer=0.19):
     market_prices = fetch_market_prices()
     taxes = get_taxes_for_bundesland(bundesland)
-    market_prices['price_full'] = ((market_prices['price'] / 100 + taxes) * (1 + mehrwertsteuer))/100
+    market_prices['price_full'] = (((market_prices['price'] / 10 + taxes)) * (1 + mehrwertsteuer))/100
 
     # get flexibility and flexibility groups based on time
     market_prices = market_prices.merge(hourly_consumption_data, on=['day_of_year', 'hour'], how='left')
@@ -184,35 +184,32 @@ def calculate_savings_fix(bundesland, annual_consumption, fix_price, working_pri
 def calculate_savings_flexible(bundesland, annual_consumption, flexibility_00_08, flexibility_08_20, flexibility_20_24, mehrwertsteuer=0.19):
     market_prices = fetch_market_prices()
     taxes = get_taxes_for_bundesland(bundesland)
-    market_prices['price_full'] = (market_prices['price'] / 100 + taxes) * (1 + mehrwertsteuer)/100
+    market_prices['price_full'] = (((market_prices['price'] / 10 + taxes)) * (1 + mehrwertsteuer))/100
 
-    # Calculate regular current costs
-    date_col = 'date'
-    hour_col = 'hour'
-    merged_data = pd.merge(market_prices, hourly_consumption_data, on=['day_of_year', hour_col], how='left')
-    merged_data['current_cost'] = merged_data['hourly_consumption'] * merged_data['price_full']
-    
     # Get flexibility
     market_prices = market_prices.merge(hourly_consumption_data, on=['day_of_year', 'hour'], how='left')
+    market_prices['current_cost'] = market_prices['hourly_consumption'] * market_prices['price_full']
     market_prices['flexibility'] = market_prices['hour'].apply(get_flexibility)
     market_prices['flexibility_group'] = market_prices['hour'].apply(get_flexibility_group)
-
+    
     # current cost
-    daily_current_cost = merged_data.groupby(date_col)['current_cost'].sum().reset_index(drop=False)
+    daily_current_cost = market_prices.groupby('date')['current_cost'].sum().reset_index(drop=False)
     hourly_current_cost = daily_current_cost['current_cost'].values # hourly_current_cost is in fact daily.
-    max_prices = market_prices.groupby(['date', 'flexibility_group']).apply(lambda x: x.loc[x['price_full'].idxmax()]).reset_index(drop=True)
-    max_prices = max_prices[['date', 'flexibility_group', 'price_full']].rename(columns={'price_full': 'max_price'})
+    #max_prices = market_prices.groupby(['date', 'flexibility_group']).apply(lambda x: x.loc[x['price_full'].idxmax()]).reset_index(drop=True)
+    #max_prices = max_prices[['date', 'flexibility_group', 'price_full']].rename(columns={'price_full': 'max_price'})
 
     # Calculate flexible and fix costs
+    # Calculate the minimum prices for each flexibility group
+   # Calculate the minimum prices for each flexibility group
     min_prices = market_prices.groupby(['date', 'flexibility_group']).apply(lambda x: x.loc[x['price_full'].idxmin()]).reset_index(drop=True)
     min_prices = min_prices[['date', 'flexibility_group', 'price_full']].rename(columns={'price_full': 'min_price'})
-    market_prices = market_prices.merge(min_prices, on=['date', 'flexibility_group'], how='left')
-    market_prices = market_prices.merge(max_prices, on=['date', 'flexibility_group'], how='left')
 
+    # Perform the merge operations
+    market_prices = market_prices.merge(min_prices[['date', 'flexibility_group', 'min_price']], on=['date', 'flexibility_group'], how='left')
+    
     market_prices['flexible_cost'] = market_prices['hourly_consumption'] * market_prices['flexibility'] * (market_prices['min_price'])
     market_prices['fixed_cost'] = market_prices['hourly_consumption'] * (1 - market_prices['flexibility']) * (market_prices['price_full'])
-    market_prices['current_cost'] = market_prices['hourly_consumption'] * (market_prices['max_price'])
-
+    
     # Calculate final costs
     daily_cost = market_prices.groupby('date')[['flexible_cost', 'fixed_cost', 'current_cost']].sum().reset_index(drop=False)
     annual_potential_cost = daily_cost[['flexible_cost', 'fixed_cost']].sum().sum()
