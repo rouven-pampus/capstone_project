@@ -41,12 +41,11 @@ hourly_timestamps = pd.date_range(start=start_date, end=end_date, freq='H')
 # Create a DataFrame from the hourly timestamps
 df_time = pd.DataFrame(hourly_timestamps, columns=['timestamp'])
 
-
+#Merge dataframe together
 df_combined = df_time.merge(df_pivot, on="timestamp", how="left")
-
 df = df_combined.merge(df_prices, on="timestamp", how="left")
 
-
+#Define chart
 def create_combined_chart(df, metrics, title, x_title, y_title):
     """
     Create a combined chart using Plotly with a single y-axis.
