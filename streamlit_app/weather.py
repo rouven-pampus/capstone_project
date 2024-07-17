@@ -79,19 +79,17 @@ def create_plot(df, metric):
         paper_bgcolor='rgba(0,0,0,0)',
         font=dict(
             family="Helvetica, Arial, sans-serif",
-            size=14,
-            color="white"
+            size=14  # Changed to black for better visibility in light mode
         ),
         xaxis=dict(
             showline=True,
             showgrid=False,
-            linecolor='white',
+            linecolor='black',  # Changed to black for better visibility in light mode
             linewidth=2,
             ticks='outside',
             tickfont=dict(
                 family='Arial',
-                size=12,
-                color='white'
+                size=12  # Changed to black for better visibility in light mode
             ),
         ),
         yaxis=dict(
@@ -99,17 +97,17 @@ def create_plot(df, metric):
             gridcolor='gray',
             gridwidth=0.5,
             showline=True,
-            linecolor='white',
+            linecolor='black',  # Changed to black for better visibility in light mode
             linewidth=2,
             ticks='outside',
             tickfont=dict(
                 family='Arial',
-                size=12,
-                color='white'
+                size=12  # Changed to black for better visibility in light mode
             ),
         )
     )
     return fig
+
 
 # Title of the Streamlit app
 st.title('Overview of weather data')
@@ -123,22 +121,25 @@ div.stButton > button:first-child {
     background-color: transparent;
     width: 150px;  /* Festgelegte Breite */
     height: 50px;  /* Festgelegte Höhe */
+    color: black;  /* Standard Textfarbe */
 }
 div.stButton > button:first-child:hover {
     border: 2px solid #26909b; /* Blaue Umrandung beim Hover */
     background-color: transparent;
+    color: #26909b;  /* Textfarbe beim Hover auf Blau setzen */
 }
 div.stButton > button:first-child:focus {
     border: 2px solid #26909b; /* Blaue Umrandung beim Fokus */
     background-color: transparent;
     box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5);
+    color: #26909b;  /* Textfarbe beim Fokus auf Blau setzen */
 }
 
 /* Dropdown-Stil anpassen */
 div[data-baseweb="select"] > div {
     border: 1px solid #d4d4d4 !important; /* Standardgraue Umrandung */
     cursor: default !important; /* Standard-Cursor statt Text-Cursor */
-    margin-top: 60px; /* Abstand nach oben */
+    margin-top: -30px; /* Reduzierter Abstand nach oben */
     margin-left: 0; /* Abstand nach links */
 }
 div[data-baseweb="select"] > div:hover {
@@ -149,10 +150,10 @@ div[data-baseweb="select"] > div:focus-within {
     outline: none !important;
     box-shadow: 0 0 0 0.2rem rgba(38, 144, 155, 0.5) !important;
 }
-            
+
 /* Label-Stil anpassen */
 div[data-testid="stFormLabel"] > label {
-    margin-top: 60px; /* Abstand nach oben */
+    margin-top: 0px; /* Reduzierter Abstand nach oben */
     margin-left: 0; /* Abstand nach links */
     display: block; /* Block-Anzeige für den Abstand */
     text-align: left; /* Text nach links ausrichten */
@@ -160,34 +161,30 @@ div[data-testid="stFormLabel"] > label {
 </style>
 """, unsafe_allow_html=True)
 
-# Layout for buttons and drop-down menu
-col1, col2 = st.columns([3, 1])
+# Layout for buttons
+temp_emoji = "🌡️"
+wind_emoji = "💨"
+sun_emoji = "☀️"
+button_col1, button_col2, button_col3 = st.columns([1, 1, 1])
+with button_col1:
+    if st.button(f'{temp_emoji} Temperature'):
+        st.session_state.active_metric = 'temperature'
+with button_col2:
+    if st.button(f'{wind_emoji} Wind'):
+        st.session_state.active_metric = 'wind'
+with button_col3:
+    if st.button(f'{sun_emoji} Sunshine'):
+        st.session_state.active_metric = 'sunshine'
 
-with col1:
-    temp_emoji = "🌡️"  
-    wind_emoji = "💨"  
-    sun_emoji = "☀️"  
-    # Arrange buttons in a row with spaces in between
-    button_col1, space1, button_col2, space2, button_col3 = st.columns([1, 0.2, 1, 0.2, 1])
-    with button_col1:
-        if st.button(f'{temp_emoji} Temperature'):
-            st.session_state.active_metric = 'temperature'
-    with button_col2:
-        if st.button(f'{wind_emoji} Wind'):
-            st.session_state.active_metric = 'wind'
-    with button_col3:
-        if st.button(f'{sun_emoji} Sunshine'):
-            st.session_state.active_metric = 'sunshine'
-
-with col2:
-    # Dropdown for the period selection
-    options = {
-        "Last 7 days": datetime.now() - timedelta(days=7),
-        "Last 14 days": datetime.now() - timedelta(days=14),
-        "Last 21 days": datetime.now() - timedelta(days=21)
-    }
-    selected_option = st.selectbox(" ", list(options.keys()))
-    selected_date = pd.Timestamp(options[selected_option], tz='Europe/Berlin')
+# Dropdown for the period selection
+st.markdown("##### Select Time Period")
+options = {
+    "Last 7 days": datetime.now() - timedelta(days=7),
+    "Last 14 days": datetime.now() - timedelta(days=14),
+    "Last 21 days": datetime.now() - timedelta(days=21)
+}
+selected_option = st.selectbox(" ", list(options.keys()))
+selected_date = pd.Timestamp(options[selected_option], tz='Europe/Berlin')
 
 # Filter the data by selected time period
 df_weather['timestamp'] = pd.to_datetime(df_weather['timestamp'], utc=True)
@@ -203,9 +200,5 @@ if selected_metric == 'sunshine':
 
 # Display the graph based on the current selection
 st.plotly_chart(create_plot(df_weather, selected_metric), use_container_width=True)
-
-
-
-
 
 
