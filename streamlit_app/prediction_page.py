@@ -77,7 +77,13 @@ def create_combined_chart(df, metrics, title, x_title, y_title):
             x=df["timestamp"],
             y=df["price"],
             name="Day-Ahead-Price",
-            marker_color='rgb(158,202,225)'
+            marker=dict(
+            color=df["price"],  # Use y_data for coloring
+            colorscale=[
+            [0.0, '#61d3b7'],  # Start of the scale --> 0.0 ersetzen mit min(y), wobei y deine y-achse darstellt
+            [1.0, '#26909b']   # End of the scale --> 1.0 ersetzen mit max(y)
+            ]
+        )
         ))
 
     # Update layout

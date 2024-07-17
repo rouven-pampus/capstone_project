@@ -113,8 +113,11 @@ def create_bar_chart(x_data, y_data, title, x_title, y_title):
         y=y_data,
         marker=dict(
         color=y_data,  # Use y_data for coloring
-        colorscale='Blues'
-    )
+        colorscale=[
+            [0.0, '#61d3b7'],  # Start of the scale --> 0.0 ersetzen mit min(y), wobei y deine y-achse darstellt
+            [1.0, '#26909b']   # End of the scale --> 1.0 ersetzen mit max(y)
+            ]
+        )
     ))
     
     # Update layout
