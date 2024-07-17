@@ -14,10 +14,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # Load consumption data
 query_consumption = """SELECT * FROM "01_bronze".raw_consumption_pattern"""
-# hourly_consumption_data = get_data(query_consumption)
-# consumption_sum = hourly_consumption_data['total'].sum()
-# hourly_consumption_data['usage'] = hourly_consumption_data['total'] / consumption_sum
-hourly_consumption_data = pd.read_csv('./data/prepared_consumption2024.csv', sep = ",")
+hourly_consumption_data = get_data(query_consumption)
 
 # Page title
 st.title("Electricity Savings Calculator")
