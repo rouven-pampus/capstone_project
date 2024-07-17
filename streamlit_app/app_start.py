@@ -39,11 +39,11 @@ st.set_page_config(
 home_page = st.Page("energy_app.py", title="Overview", icon=":material/home:", default=True)
 prediction_page = st.Page("prediction_page.py", title="Prediction", icon=":material/science:")
 market_page = st.Page("electricity_market.py", title="Electricity Market", icon=":material/bolt:")
-weather_page = st.Page("weather.py", title="Weather Data", icon=":material/sunny:")
+weather_page = st.Page("weather.py", title="Weather", icon=":material/sunny:")
 calculator_page = st.Page("calculator_app.py", title="Savings Calculator", icon=":material/calculate:")
 
 
-st.logo('images/logo.png', link="https://github.com/rouven-pampus/capstone_project" )
+st.logo('images/logo.png', link="https://github.com/rouven-pampus/capstone_project")
 
 pg = st.navigation(
     {
