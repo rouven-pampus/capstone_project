@@ -17,8 +17,8 @@ def load_data(query):
 
 query_string1 = """select * from "03_gold".fact_electricity_market_germany
     WHERE date_trunc('day', "timestamp") >= (
-    SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '365 days'
-    FROM "02_silver".fact_total_power_germany)"""
+    SELECT MAX(date_trunc('day', "timestamp")) - INTERVAL '7 days'
+    FROM "03_gold".fact_electricity_market_germany)"""
 
 df_power = load_data(query_string1)
 
@@ -95,7 +95,7 @@ def create_combined_line_chart(df, metrics, title, x_title, y_title_left, y_titl
     )
     return fig
 
-st.title('Whats going on in the energy market')
+st.title('German energy market :electric_plug:')
 
 col1, col2 = st.columns([3,1])
 with col1:
@@ -121,7 +121,7 @@ with col1:
 with col2:
     # Create timeframe selection
     timeframe_entries = df_power.timeframe.unique()
-    timeframe_radio = st.selectbox("Please choose your metrics:", ["today","yesterday"])
+    timeframe_radio = st.selectbox("Please choose your metrics:", ["today","yesterday","history"])
 
 
 # Filter dataframe
