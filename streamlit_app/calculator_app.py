@@ -36,11 +36,16 @@ with col1:
         "Hamburg", "Hessen", "Niedersachsen", "Mecklenburg-Vorpommern",
         "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland",
         "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"
-    ])
+        ])
     elif option == 'Flexible':
         st.subheader("Flexible Plan Details")
         annual_consumption = st.number_input("Enter your annual electricity consumption (kWh)", min_value=0, value=2500)
-
+        bundesland = st.selectbox("Select your State", [
+        "Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen",
+        "Hamburg", "Hessen", "Niedersachsen", "Mecklenburg-Vorpommern",
+        "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland",
+        "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"
+        ])
 with col3:
     
     if option == 'Fix':
@@ -240,7 +245,7 @@ def plot_savings(daily_cost, annual_consumption, fix_price=0, working_price=0, h
             y=0,
             xanchor='right',
             yanchor='bottom',
-            bordercolor='black',
+            bordercolor='lightgrey',
             borderwidth=1
         )
     )
