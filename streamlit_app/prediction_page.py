@@ -98,18 +98,18 @@ def create_combined_chart(df, metrics, title, x_title, y_title):
             xanchor="center",
             x=0.5
         ),
-        height=600  # set the height of the chart in pixels
+        height=500  # set the height of the chart in pixels
     )
     return fig
 
 # Streamlit app
-st.title('Predicting the insights :bulb:')
+st.title('Predicting future prices :bulb:')
 
 # Create multiselection for chart
 metrics_multiselect = st.multiselect(
     label="Select Metrics",
     options=["Day-Ahead-Price", "Prediction", "Prediction 24h", "Prediction 48h", "Prediction 72h"],
-    default=["Day-Ahead-Price","Prediction"]
+    default=["Day-Ahead-Price"]
 )
 
 multiselect_options = {
@@ -123,7 +123,7 @@ multiselect_options = {
 selected_metrics = [multiselect_options[metric] for metric in metrics_multiselect]
 
 # Create chart
-fig = create_combined_chart(df, selected_metrics, "Day-Ahead-Price", "Time", "€/MWh")
+fig = create_combined_chart(df, selected_metrics, "Electrictiy price per hour", "Time", "€/MWh")
 
 # Show chart
 st.plotly_chart(fig, theme="streamlit", use_container_width=True)

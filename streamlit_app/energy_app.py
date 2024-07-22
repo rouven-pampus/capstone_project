@@ -159,5 +159,5 @@ with col4:
 df_sel = df_prices.query('timeframe == @timeframe_radio')
 
 # Creating and calling the price bar chart
-fig = create_bar_chart(df_sel["timestamp"], df_sel["price"], title="Day-ahead-price", x_title="Hour", y_title="€/MWh")
+fig = create_bar_chart(df_sel["timestamp"], df_sel["price"], title="Day-ahead-price per hour", x_title="Hour", y_title="€/MWh")
 st.plotly_chart(fig, theme="streamlit", use_container_width=True)
